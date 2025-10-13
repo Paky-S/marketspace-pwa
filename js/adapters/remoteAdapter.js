@@ -1,0 +1,1 @@
+// Remote Adapter (stub) - futuro backend per sync multi-dispositivo

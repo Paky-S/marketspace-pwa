@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1215" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <link rel="manifest" href="manifest.webmanifest">
+    <title>MarketSpace</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- Splash / Loader -->
+    <div id="splash">
+      <div class="splash-card">
+        <div class="app-title">MarketSpace</div>
+        <div class="progress-wrap"><div id="progress-bar"></div></div>
+        <div id="progress-label">0%</div>
+        <div class="version" id="app-version">v?</div>
+      </div>
+    </div>
+
+    <!-- App -->
+    <div id="app" hidden>
+      <header class="app-header">
+        <h1 id="page-title">Movimenti</h1>
+        <div class="header-actions">
+          <button id="btn-settings" class="icon-btn" title="Impostazioni">⚙️</button>
+        </div>
+        <div class="version-badge" id="version-badge"></div>
+      </header>
+
+      <main id="pages">
+        <!-- MOVIMENTI -->
+        <section id="page-movimenti" class="page active" aria-label="Movimenti">
+          <form id="mov-form" class="card form">
+            <div class="row">
+              <label for="mov-amount">Importo (±)</label>
+              <input id="mov-amount" inputmode="decimal" type="number" step="0.01" placeholder="es. 120.50" required>
+            </div>
+            <div class="row">
+              <label for="mov-desc">Descrizione</label>
+              <input id="mov-desc" type="text" maxlength="120" placeholder="es. Vendita, Spesa..." required>
+            </div>
+            <div class="row">
+              <label for="mov-date">Data</label>
+              <input id="mov-date" type="date" required>
+            </div>
+            <div class="row">
+              <label for="mov-spool">Filamento (opzionale)</label>
+              <select id="mov-spool"><option value="">— nessuno —</option></select>
+            </div>
+            <div class="row" id="row-grams" hidden>
+              <label for="mov-grams">Grammi usati (solo per entrate)</label>
+              <input id="mov-grams" inputmode="numeric" type="number" step="1" min="0" placeholder="es. 95">
+            </div>
+            <div class="row actions">
+              <button type="submit" class="btn primary">Aggiungi</button>
+              <button type="button" id="btn-export" class="btn">Esporta</button>
+              <label class="btn file">Importa <input id="file-import" type="file" accept=".json" hidden></label>
+            </div>
+          </form>
+
+          <div class="card">
+            <div class="toolbar">
+              <select id="mov-filter" aria-label="Filtro movimenti">
+                <option value="all">Tutti</option>
+                <option value="in">Entrate</option>
+                <option value="out">Uscite</option>
+              </select>
+              <label class="chk"><input type="checkbox" id="mov-show-arch"> Mostra archiviati</label>
+              <div class="saldo">Saldo: <strong id="saldo">0,00 €</strong></div>
+            </div>
+            <ul id="mov-list" class="list"></ul>
+          </div>
+        </section>
+
+        <!-- MAGAZZINO (nuova pagina) -->
+        <section id="page-magazzino" class="page" aria-label="Magazzino">
+          <div class="card">
+            <div class="toolbar">
+              <strong>Magazzino Filamenti</strong>
+              <button class="btn" id="btn-add-spool">Aggiungi bobina</button>
+            </div>
+            <ul id="spool-list" class="list"></ul>
+          </div>
+        </section>
+
+        <!-- TO-DO -->
+        <section id="page-todo" class="page" aria-label="To-Do">
+          <form id="todo-form" class="card form">
+            <div class="row">
+              <label for="todo-desc">Attività</label>
+              <input id="todo-desc" type="text" maxlength="140" placeholder="es. Chiamare cliente..." required>
+            </div>
+            <div class="row">
+              <label for="todo-priority">Priorità</label>
+              <select id="todo-priority">
+                <option value="very-high">Molto alta</option>
+                <option value="high">Alta</option>
+                <option value="normal" selected>Normale</option>
+                <option value="low">Bassa</option>
+              </select>
+            </div>
+            <div class="row actions">
+              <button type="submit" class="btn primary">Aggiungi</button>
+              <button type="button" id="btn-archive-done" class="btn">Archivia completate</button>
+            </div>
+          </form>
+
+          <div class="card">
+            <div class="toolbar">
+              <label class="chk"><input type="checkbox" id="todo-show-arch"> Mostra archiviati</label>
+            </div>
+            <ul id="todo-list" class="list"></ul>
+          </div>
+        </section>
+
+        <!-- ANALISI -->
+        <section id="page-analisi" class="page" aria-label="Analisi">
+          <div class="card">
+            <div class="toolbar">
+              <select id="range">
+                <option value="all">Tutto</option>
+                <option value="year">Anno</option>
+                <option value="month">Mese</option>
+                <option value="week">Settimana</option>
+              </select>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="chart" aria-label="Saldo cumulato"></canvas>
+            </div>
+            <div class="stats" id="stats"></div>
+            <div class="trend" id="trend"></div>
+          </div>
+
+          <div class="card">
+            <div class="toolbar"><strong>Impostazioni grafico</strong></div>
+            <div class="row">
+              <label for="palette">Palette colori</label>
+              <select id="palette">
+                <option value="blue" selected>Blu</option>
+                <option value="red">Rosso</option>
+                <option value="green">Verde</option>
+                <option value="purple">Viola</option>
+              </select>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Bottom Bar -->
+      <nav class="bottom-bar" role="tablist">
+        <button class="tab active" data-target="page-movimenti" aria-label="Movimenti">
+          <span class="icon icon-mov"></span><span>Movimenti</span>
+        </button>
+        <button class="tab" data-target="page-magazzino" aria-label="Magazzino">
+          <span class="icon icon-warehouse"></span><span>Magazzino</span>
+        </button>
+        <button class="tab" data-target="page-todo" aria-label="To-Do">
+          <span class="icon icon-todo"></span><span>To-Do</span>
+        </button>
+        <button class="tab" data-target="page-analisi" aria-label="Analisi">
+          <span class="icon icon-ana"></span><span>Analisi</span>
+        </button>
+      </nav>
+    </div>
+
+    <script src="js/db.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/adapters/remoteAdapter.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
+

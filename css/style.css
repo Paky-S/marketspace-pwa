@@ -92,3 +92,10 @@ dialog{border:0;border-radius:16px;padding:0;background:transparent}
 
 /* Evita zoom iOS */
 input,select{font-size:16px}
+
+/* Segmented (Entrata/Uscita) */
+.segmented{display:inline-flex;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:4px}
+.seg{position:relative}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:inline-block;padding:8px 12px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+.seg input:checked + span{background:var(--accent-weak);border-color:color-mix(in srgb,var(--accent) 40%, transparent)}

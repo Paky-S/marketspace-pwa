@@ -88,25 +88,54 @@
 
         <!-- TO-DO -->
         <section id="page-todo" class="page" aria-label="To-Do">
-          <form id="todo-form" class="card form">
+          <form id="mov-form" class="card form">
             <div class="row">
-              <label for="todo-desc">Attività</label>
-              <input id="todo-desc" type="text" maxlength="140" placeholder="es. Chiamare cliente..." required>
+              <label for="mov-amount">Importo</label>
+              <input id="mov-amount" inputmode="decimal" type="number" step="0.01" placeholder="es. 120.50" required>
+            </div>
+
+            <!-- NUOVO: selezione tipo -->
+            <div class="row">
+              <label>Tipo</label>
+              <div class="segmented" role="radiogroup" aria-label="Tipo movimento">
+                <label class="seg">
+                  <input type="radio" name="mov-type" value="in" checked required>
+                  <span>Entrata</span>
+                </label>
+                <label class="seg">
+                  <input type="radio" name="mov-type" value="out" required>
+                  <span>Uscita</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="row">
+              <label for="mov-desc">Descrizione</label>
+              <input id="mov-desc" type="text" maxlength="120" placeholder="es. Vendita, Spesa..." required>
             </div>
             <div class="row">
-              <label for="todo-priority">Priorità</label>
-              <select id="todo-priority">
-                <option value="very-high">Molto alta</option>
-                <option value="high">Alta</option>
-                <option value="normal" selected>Normale</option>
-                <option value="low">Bassa</option>
-              </select>
+              <label for="mov-date">Data</label>
+              <input id="mov-date" type="date" required>
             </div>
+            <div class="row">
+              <label for="mov-spool">Filamento (opzionale)</label>
+              <select id="mov-spool"><option value="">— nessuno —</option></select>
+            </div>
+            <div class="row" id="row-grams" hidden>
+              <label for="mov-grams">Grammi usati (solo per entrate)</label>
+              <input id="mov-grams" inputmode="numeric" type="number" step="1" min="0" placeholder="es. 95">
+            </div>
+
             <div class="row actions">
-              <button type="submit" class="btn primary">Aggiungi</button>
-              <button type="button" id="btn-archive-done" class="btn">Archivia completate</button>
+              <button type="submit" class="btn primary" id="btn-add">Aggiungi</button>
+              <!-- NUOVO: pulsante Sottrai -->
+              <button type="button" class="btn" id="btn-sub">Sottrai</button>
+
+              <button type="button" id="btn-export" class="btn">Esporta</button>
+              <label class="btn file">Importa <input id="file-import" type="file" accept=".json" hidden></label>
             </div>
           </form>
+
 
           <div class="card">
             <div class="toolbar">

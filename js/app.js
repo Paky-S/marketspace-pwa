@@ -1,4 +1,4 @@
-// MarketSpace v1.3.0 (Analisi filtro + Settings + ToDo colori)
+// MarketSpace v1.3.2 (Entrata/Uscita + boot robusto)
 const state = {
   version: "0.0.0",
   username: "default",
@@ -47,7 +47,7 @@ async function boot(){
     }
     try{ await DB.open(); }catch(e){ console.error("IndexedDB:", e); alert("Errore apertura database locale. L'app funziona ma non salverà i dati finché non consenti l'archiviazione."); }
     const pal = await DB.getMeta("palette"); applyPalette(pal||"blue");
-    document.getElementById("mov-date").valueAsDate = new Date();
+    const date = document.getElementById("mov-date"); if (date) date.valueAsDate = new Date();
     bindEvents();
     await refreshMovements();
     await refreshTodos();
@@ -58,7 +58,6 @@ async function boot(){
     hideSplash();
   }
 }
-
 document.addEventListener("DOMContentLoaded", boot);
 
 function bindEvents(){
@@ -85,11 +84,19 @@ function bindEvents(){
   document.getElementById("file-import").addEventListener("change", e=>onImport(e.target.files[0]));
 
   // NUOVO: pulsante Sottrai (setta tipo=Uscita e invia)
-  document.getElementById("btn-sub").addEventListener("click", ()=>{
-    const out = document.querySelector('input[name="mov-type"][value="out"]');
-    if (out) out.checked = true;
-    document.getElementById("mov-form").requestSubmit(); // invia il form
+  const btnSub = document.getElementById("btn-sub");
+  if (btnSub){
+    btnSub.addEventListener("click", ()=>{
+      const out = document.querySelector('input[name="mov-type"][value="out"]');
+      if (out) out.checked = true;
+      document.getElementById("mov-form").requestSubmit();
+    });
+  }
+  // Mostra/nasconde riga grammi al cambio tipo
+  document.querySelectorAll('input[name="mov-type"]').forEach(r=>{
+    r.addEventListener('change', onSpoolChange);
   });
+
   // Magazzino
   document.getElementById("btn-add-spool").addEventListener("click", onAddSpool);
 
@@ -119,9 +126,9 @@ function switchPage(id){
 function onSpoolChange(){
   const sel = document.getElementById("mov-spool");
   const isIn = document.querySelector('input[name="mov-type"]:checked')?.value === "in";
-  document.getElementById("row-grams").hidden = !(sel.value && isIn);
+  const row = document.getElementById("row-grams");
+  if (row) row.hidden = !(sel && sel.value && isIn);
 }
-
 async function onAddMovement(ev){
   ev.preventDefault();
 
@@ -130,14 +137,14 @@ async function onAddMovement(ev){
   if (!Number.isFinite(amount) || amount<=0) return alert("Inserisci un importo valido (> 0).");
 
   const type = document.querySelector('input[name="mov-type"]:checked')?.value || "in";
-  if (type === "out") amount = -Math.abs(amount); // uscita = negativo
-  else amount = Math.abs(amount);                 // entrata = positivo
+  amount = (type === "out") ? -Math.abs(amount) : Math.abs(amount);
 
   const desc = document.getElementById("mov-desc").value.trim();
-  const d = document.getElementById("mov-date").value ? new Date(document.getElementById("mov-date").value) : new Date();
+  const dInp = document.getElementById("mov-date");
+  const d = dInp && dInp.value ? new Date(dInp.value) : new Date();
   const iso = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
 
-  let spoolId = document.getElementById("mov-spool").value || null;
+  let spoolId = document.getElementById("mov-spool")?.value || null;
   let gramsUsed = 0, materialCost = 0;
 
   // i grammi/materialCost hanno senso solo per ENTRATA
@@ -149,23 +156,19 @@ async function onAddMovement(ev){
     if (s.grams_available < gramsUsed) return alert("Grammatura insufficiente in magazzino.");
     materialCost = s.price_per_kg * (gramsUsed/1000);
     await DB.consumeSpool(s.id, gramsUsed);
-  } else {
-    spoolId=null; gramsUsed=0; materialCost=0;
-  }
+  } else { spoolId=null; gramsUsed=0; materialCost=0; }
 
   await DB.addMovement({username:state.username, amount, description:desc, date:iso, archived:false, spoolId, gramsUsed, materialCost});
 
   // reset form
   document.getElementById("mov-amount").value = "";
   document.getElementById("mov-desc").value = "";
-  document.getElementById("mov-grams").value = "";
-  document.getElementById("mov-spool").value = "";
-  // di default rimetto "Entrata"
-  const inRadio = document.querySelector('input[name="mov-type"][value="in"]');
-  if (inRadio) inRadio.checked = true;
+  const g = document.getElementById("mov-grams"); if (g) g.value = "";
+  const sp = document.getElementById("mov-spool"); if (sp) sp.value = "";
+  const inRadio = document.querySelector('input[name="mov-type"][value="in"]'); if (inRadio) inRadio.checked = true;
 
   onSpoolChange();
-  document.getElementById("mov-date").valueAsDate = new Date();
+  if (dInp) dInp.valueAsDate = new Date();
   refreshMovements();
 }
 
@@ -198,6 +201,7 @@ async function refreshMovements(){
     li.append(left, right); list.appendChild(li);
   }
 
+  // aggiorna elenco bobine nel select
   const sel = document.getElementById("mov-spool");
   const keep = sel.value;
   const spools = await DB.listSpools();

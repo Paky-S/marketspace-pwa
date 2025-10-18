@@ -35,66 +35,11 @@
         <section id="page-movimenti" class="page active" aria-label="Movimenti">
           <form id="mov-form" class="card form">
             <div class="row">
-              <label for="mov-amount">Importo (±)</label>
-              <input id="mov-amount" inputmode="decimal" type="number" step="0.01" placeholder="es. 120.50" required>
-            </div>
-            <div class="row">
-              <label for="mov-desc">Descrizione</label>
-              <input id="mov-desc" type="text" maxlength="120" placeholder="es. Vendita, Spesa..." required>
-            </div>
-            <div class="row">
-              <label for="mov-date">Data</label>
-              <input id="mov-date" type="date" required>
-            </div>
-            <div class="row">
-              <label for="mov-spool">Filamento (opzionale)</label>
-              <select id="mov-spool"><option value="">— nessuno —</option></select>
-            </div>
-            <div class="row" id="row-grams" hidden>
-              <label for="mov-grams">Grammi usati (solo per entrate)</label>
-              <input id="mov-grams" inputmode="numeric" type="number" step="1" min="0" placeholder="es. 95">
-            </div>
-            <div class="row actions">
-              <button type="submit" class="btn primary">Aggiungi</button>
-              <button type="button" id="btn-export" class="btn">Esporta</button>
-              <label class="btn file">Importa <input id="file-import" type="file" accept=".json" hidden></label>
-            </div>
-          </form>
-
-          <div class="card">
-            <div class="toolbar">
-              <select id="mov-filter" aria-label="Filtro movimenti">
-                <option value="all">Tutti</option>
-                <option value="in">Entrate</option>
-                <option value="out">Uscite</option>
-              </select>
-              <label class="chk"><input type="checkbox" id="mov-show-arch"> Mostra archiviati</label>
-              <div class="saldo">Saldo: <strong id="saldo">0,00 €</strong></div>
-            </div>
-            <ul id="mov-list" class="list"></ul>
-          </div>
-        </section>
-
-        <!-- MAGAZZINO -->
-        <section id="page-magazzino" class="page" aria-label="Magazzino">
-          <div class="card">
-            <div class="toolbar">
-              <strong>Magazzino Filamenti</strong>
-              <button class="btn" id="btn-add-spool">Aggiungi bobina</button>
-            </div>
-            <ul id="spool-list" class="list"></ul>
-          </div>
-        </section>
-
-        <!-- TO-DO -->
-        <section id="page-todo" class="page" aria-label="To-Do">
-          <form id="mov-form" class="card form">
-            <div class="row">
               <label for="mov-amount">Importo</label>
               <input id="mov-amount" inputmode="decimal" type="number" step="0.01" placeholder="es. 120.50" required>
             </div>
 
-            <!-- NUOVO: selezione tipo -->
+            <!-- NUOVO: selezione Entrata/Uscita -->
             <div class="row">
               <label>Tipo</label>
               <div class="segmented" role="radiogroup" aria-label="Tipo movimento">
@@ -136,6 +81,52 @@
             </div>
           </form>
 
+          <div class="card">
+            <div class="toolbar">
+              <select id="mov-filter" aria-label="Filtro movimenti">
+                <option value="all">Tutti</option>
+                <option value="in">Entrate</option>
+                <option value="out">Uscite</option>
+              </select>
+              <label class="chk"><input type="checkbox" id="mov-show-arch"> Mostra archiviati</label>
+              <div class="saldo">Saldo: <strong id="saldo">0,00 €</strong></div>
+            </div>
+            <ul id="mov-list" class="list"></ul>
+          </div>
+        </section>
+
+        <!-- MAGAZZINO -->
+        <section id="page-magazzino" class="page" aria-label="Magazzino">
+          <div class="card">
+            <div class="toolbar">
+              <strong>Magazzino Filamenti</strong>
+              <button class="btn" id="btn-add-spool">Aggiungi bobina</button>
+            </div>
+            <ul id="spool-list" class="list"></ul>
+          </div>
+        </section>
+
+        <!-- TO-DO -->
+        <section id="page-todo" class="page" aria-label="To-Do">
+          <form id="todo-form" class="card form">
+            <div class="row">
+              <label for="todo-desc">Attività</label>
+              <input id="todo-desc" type="text" maxlength="140" placeholder="es. Chiamare cliente..." required>
+            </div>
+            <div class="row">
+              <label for="todo-priority">Priorità</label>
+              <select id="todo-priority">
+                <option value="very-high">Molto alta</option>
+                <option value="high">Alta</option>
+                <option value="normal" selected>Normale</option>
+                <option value="low">Bassa</option>
+              </select>
+            </div>
+            <div class="row actions">
+              <button type="submit" class="btn primary">Aggiungi</button>
+              <button type="button" id="btn-archive-done" class="btn">Archivia completate</button>
+            </div>
+          </form>
 
           <div class="card">
             <div class="toolbar">

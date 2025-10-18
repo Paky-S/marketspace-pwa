@@ -33,25 +33,32 @@ async function loadConfig(){
 }
 
 async function boot(){
-  await loadConfig();
-  if ("serviceWorker" in navigator){ try{ await navigator.serviceWorker.register("sw.js"); }catch{} }
-  await DB.open();
+  const hideSplash = ()=>{
+    const s = document.getElementById("splash");
+    const a = document.getElementById("app");
+    if (s) s.style.display = "none";
+    if (a) a.hidden = false;
+  };
 
-  const pal = await DB.getMeta("palette"); applyPalette(pal||"blue");
-  document.getElementById("mov-date").valueAsDate = new Date();
-
-  bindEvents();
-  // Mostra/nasconde riga grammi al cambio tipo
-  document.querySelectorAll('input[name="mov-type"]').forEach(r=>{
-    r.addEventListener('change', onSpoolChange);
-  });
-
-  await refreshMovements();
-  await refreshTodos();
-
-  document.getElementById("splash").style.display="none";
-  document.getElementById("app").hidden=false;
+  try{
+    await loadConfig();
+    if ("serviceWorker" in navigator){
+      try{ await navigator.serviceWorker.register("sw.js"); }catch(e){ console.warn("SW:", e); }
+    }
+    try{ await DB.open(); }catch(e){ console.error("IndexedDB:", e); alert("Errore apertura database locale. L'app funziona ma non salverà i dati finché non consenti l'archiviazione."); }
+    const pal = await DB.getMeta("palette"); applyPalette(pal||"blue");
+    document.getElementById("mov-date").valueAsDate = new Date();
+    bindEvents();
+    await refreshMovements();
+    await refreshTodos();
+  } catch(e){
+    console.error("Boot error:", e);
+    alert("Si è verificato un errore in avvio. Prova a ricaricare la pagina (Ctrl+F5).");
+  } finally {
+    hideSplash();
+  }
 }
+
 document.addEventListener("DOMContentLoaded", boot);
 
 function bindEvents(){

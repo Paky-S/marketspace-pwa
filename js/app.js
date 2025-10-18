@@ -41,6 +41,11 @@ async function boot(){
   document.getElementById("mov-date").valueAsDate = new Date();
 
   bindEvents();
+  // Mostra/nasconde riga grammi al cambio tipo
+  document.querySelectorAll('input[name="mov-type"]').forEach(r=>{
+    r.addEventListener('change', onSpoolChange);
+  });
+
   await refreshMovements();
   await refreshTodos();
 
@@ -72,6 +77,12 @@ function bindEvents(){
   document.getElementById("btn-export").addEventListener("click", onExport);
   document.getElementById("file-import").addEventListener("change", e=>onImport(e.target.files[0]));
 
+  // NUOVO: pulsante Sottrai (setta tipo=Uscita e invia)
+  document.getElementById("btn-sub").addEventListener("click", ()=>{
+    const out = document.querySelector('input[name="mov-type"][value="out"]');
+    if (out) out.checked = true;
+    document.getElementById("mov-form").requestSubmit(); // invia il form
+  });
   // Magazzino
   document.getElementById("btn-add-spool").addEventListener("click", onAddSpool);
 
@@ -100,12 +111,21 @@ function switchPage(id){
 /* ===== Movimenti ===== */
 function onSpoolChange(){
   const sel = document.getElementById("mov-spool");
-  document.getElementById("row-grams").hidden = !sel.value;
+  const isIn = document.querySelector('input[name="mov-type"]:checked')?.value === "in";
+  document.getElementById("row-grams").hidden = !(sel.value && isIn);
 }
+
 async function onAddMovement(ev){
   ev.preventDefault();
-  const amount = Number(String(document.getElementById("mov-amount").value).replace(",","."));
-  if (!Number.isFinite(amount) || amount===0) return alert("Importo non valido.");
+
+  // Importo sempre positivo in input
+  let amount = Number(String(document.getElementById("mov-amount").value).replace(",","."));
+  if (!Number.isFinite(amount) || amount<=0) return alert("Inserisci un importo valido (> 0).");
+
+  const type = document.querySelector('input[name="mov-type"]:checked')?.value || "in";
+  if (type === "out") amount = -Math.abs(amount); // uscita = negativo
+  else amount = Math.abs(amount);                 // entrata = positivo
+
   const desc = document.getElementById("mov-desc").value.trim();
   const d = document.getElementById("mov-date").value ? new Date(document.getElementById("mov-date").value) : new Date();
   const iso = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
@@ -113,7 +133,8 @@ async function onAddMovement(ev){
   let spoolId = document.getElementById("mov-spool").value || null;
   let gramsUsed = 0, materialCost = 0;
 
-  if (spoolId && amount>0){
+  // i grammi/materialCost hanno senso solo per ENTRATA
+  if (type === "in" && spoolId){
     gramsUsed = Number(document.getElementById("mov-grams").value);
     if (!Number.isFinite(gramsUsed) || gramsUsed<=0) return alert("Inserisci i grammi usati (>0) o deseleziona il filamento.");
     const s = await DB.getSpool(Number(spoolId));
@@ -121,17 +142,26 @@ async function onAddMovement(ev){
     if (s.grams_available < gramsUsed) return alert("Grammatura insufficiente in magazzino.");
     materialCost = s.price_per_kg * (gramsUsed/1000);
     await DB.consumeSpool(s.id, gramsUsed);
-  } else { spoolId=null; gramsUsed=0; materialCost=0; }
+  } else {
+    spoolId=null; gramsUsed=0; materialCost=0;
+  }
 
   await DB.addMovement({username:state.username, amount, description:desc, date:iso, archived:false, spoolId, gramsUsed, materialCost});
+
+  // reset form
   document.getElementById("mov-amount").value = "";
   document.getElementById("mov-desc").value = "";
   document.getElementById("mov-grams").value = "";
   document.getElementById("mov-spool").value = "";
+  // di default rimetto "Entrata"
+  const inRadio = document.querySelector('input[name="mov-type"][value="in"]');
+  if (inRadio) inRadio.checked = true;
+
   onSpoolChange();
   document.getElementById("mov-date").valueAsDate = new Date();
   refreshMovements();
 }
+
 async function refreshMovements(){
   const filter = document.getElementById("mov-filter").value;
   const showArch = document.getElementById("mov-show-arch").checked;

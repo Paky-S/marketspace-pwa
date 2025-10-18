@@ -75,7 +75,7 @@
           </div>
         </section>
 
-        <!-- MAGAZZINO (nuova pagina) -->
+        <!-- MAGAZZINO -->
         <section id="page-magazzino" class="page" aria-label="Magazzino">
           <div class="card">
             <div class="toolbar">
@@ -120,31 +120,25 @@
         <section id="page-analisi" class="page" aria-label="Analisi">
           <div class="card">
             <div class="toolbar">
-              <select id="range">
-                <option value="all">Tutto</option>
-                <option value="year">Anno</option>
-                <option value="month">Mese</option>
-                <option value="week">Settimana</option>
-              </select>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <select id="range">
+                  <option value="all">Tutto</option>
+                  <option value="year">Anno</option>
+                  <option value="month">Mese</option>
+                  <option value="week">Settimana</option>
+                  <option value="custom">Filtro (da…a…)</option>
+                </select>
+                <input id="date-from" type="date" style="display:none;">
+                <span id="date-sep" class="muted" style="display:none;">→</span>
+                <input id="date-to" type="date" style="display:none;">
+                <button id="btn-apply-range" class="btn" style="display:none;">Applica</button>
+              </div>
             </div>
             <div class="chart-wrap">
               <canvas id="chart" aria-label="Saldo cumulato"></canvas>
             </div>
             <div class="stats" id="stats"></div>
             <div class="trend" id="trend"></div>
-          </div>
-
-          <div class="card">
-            <div class="toolbar"><strong>Impostazioni grafico</strong></div>
-            <div class="row">
-              <label for="palette">Palette colori</label>
-              <select id="palette">
-                <option value="blue" selected>Blu</option>
-                <option value="red">Rosso</option>
-                <option value="green">Verde</option>
-                <option value="purple">Viola</option>
-              </select>
-            </div>
           </div>
         </section>
       </main>
@@ -166,10 +160,31 @@
       </nav>
     </div>
 
+    <!-- Settings Modal -->
+    <dialog id="dlg-settings">
+      <form method="dialog" class="card" style="max-width:520px;">
+        <h2 style="margin:0 0 8px;">Impostazioni</h2>
+        <p class="muted" style="margin:0 0 12px;">Preferenze dell’app</p>
+
+        <div class="row">
+          <label for="set-palette">Palette colori</label>
+          <select id="set-palette">
+            <option value="blue">Blu</option>
+            <option value="red">Rosso</option>
+            <option value="green">Verde</option>
+            <option value="purple">Viola</option>
+          </select>
+        </div>
+
+        <div class="row actions" style="justify-content:flex-end;">
+          <button value="cancel" class="btn">Chiudi</button>
+        </div>
+      </form>
+    </dialog>
+
     <script src="js/db.js"></script>
     <script src="js/charts.js"></script>
     <script src="js/adapters/remoteAdapter.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>
-

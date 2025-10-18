@@ -1,4 +1,4 @@
-// Linea cumulata con assi, tacche, tooltip; altezza fissa; step mode
+// Canvas line chart con assi, tacche, tooltip; altezza fissa; supporto step
 function drawLineChart(canvas, points, opts={}){
   const DPR = window.devicePixelRatio || 1;
   const Wcss = canvas.clientWidth || 600;
@@ -62,7 +62,7 @@ function drawLineChart(canvas, points, opts={}){
   ctx.fillStyle = colLine; const R=3*DPR;
   points.forEach(p=>{ const x=x2px(p.x.getTime()), y=y2px(p.y); ctx.beginPath(); ctx.arc(x,y,R,0,Math.PI*2); ctx.fill(); });
 
-  // Tooltip (singolo)
+  // Tooltip
   if (!canvas._tip){ const tip=document.createElement("div"); tip.className="tooltip"; tip.style.display="none"; canvas._tip=tip; canvas.parentElement.appendChild(tip); }
   canvas.onmousemove = ev=>{
     const rect=canvas.getBoundingClientRect(); const mx=(ev.clientX-rect.left)*(window.devicePixelRatio||1), my=(ev.clientY-rect.top)*(window.devicePixelRatio||1);

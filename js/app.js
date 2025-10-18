@@ -1,4 +1,4 @@
-// MarketSpace v1.2.0
+// MarketSpace v1.3.0 (Analisi filtro + Settings + ToDo colori)
 const state = {
   version: "0.0.0",
   username: "default",
@@ -36,12 +36,14 @@ async function boot(){
   await loadConfig();
   if ("serviceWorker" in navigator){ try{ await navigator.serviceWorker.register("sw.js"); }catch{} }
   await DB.open();
+
   const pal = await DB.getMeta("palette"); applyPalette(pal||"blue");
   document.getElementById("mov-date").valueAsDate = new Date();
+
   bindEvents();
   await refreshMovements();
   await refreshTodos();
-  // splash off
+
   document.getElementById("splash").style.display="none";
   document.getElementById("app").hidden=false;
 }
@@ -51,6 +53,17 @@ function bindEvents(){
   document.querySelectorAll(".tab").forEach(btn=>{
     btn.addEventListener("click",()=>switchPage(btn.dataset.target));
   });
+
+  // Impostazioni
+  const dlg = document.getElementById("dlg-settings");
+  document.getElementById("btn-settings").addEventListener("click", ()=>{
+    document.getElementById("set-palette").value = state.palette || "blue";
+    dlg.showModal();
+  });
+  document.getElementById("set-palette").addEventListener("change", (e)=>{
+    applyPalette(e.target.value);
+  });
+
   // Movimenti
   document.getElementById("mov-form").addEventListener("submit", onAddMovement);
   document.getElementById("mov-filter").addEventListener("change", refreshMovements);
@@ -58,15 +71,18 @@ function bindEvents(){
   document.getElementById("mov-spool").addEventListener("change", onSpoolChange);
   document.getElementById("btn-export").addEventListener("click", onExport);
   document.getElementById("file-import").addEventListener("change", e=>onImport(e.target.files[0]));
+
   // Magazzino
   document.getElementById("btn-add-spool").addEventListener("click", onAddSpool);
+
   // To-Do
   document.getElementById("todo-form").addEventListener("submit", onAddTodo);
   document.getElementById("todo-show-arch").addEventListener("change", refreshTodos);
   document.getElementById("btn-archive-done").addEventListener("click", archiveDoneTodos);
+
   // Analisi
-  document.getElementById("range").addEventListener("change", renderAnalytics);
-  document.getElementById("palette").addEventListener("change", e=>applyPalette(e.target.value));
+  document.getElementById("range").addEventListener("change", onRangeChange);
+  document.getElementById("btn-apply-range").addEventListener("click", (e)=>{ e.preventDefault(); renderAnalytics(); });
 }
 
 function switchPage(id){
@@ -131,17 +147,20 @@ async function refreshMovements(){
     const dateStr = new Intl.DateTimeFormat("it-IT").format(new Date(m.date));
     const amountStr = new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(m.amount);
     let extra = "";
-    if (m.spoolId && m.gramsUsed){ const costStr = new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(m.materialCost||0); extra=` · Filamento: #${m.spoolId} · ${m.gramsUsed} g (costo ${costStr})`; }
+    if (m.spoolId && m.gramsUsed){
+      const costStr = new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(m.materialCost||0);
+      extra=` · Filamento: #${m.spoolId} · ${m.gramsUsed} g (costo ${costStr})`;
+    }
     left.innerHTML = `<div><strong>${amountStr}</strong> — ${m.description||""}${extra}</div><div class="muted">${dateStr}</div>`;
 
     const badge = document.createElement("span"); badge.className = "badge " + (m.amount>=0 ? "ok":"danger"); badge.textContent = (m.amount>=0) ? "Entrata":"Uscita";
     const arch = document.createElement("button"); arch.className="icon-btn"; arch.textContent = m.archived?"Ripristina":"Archivia";
     arch.addEventListener("click", async()=>{ if(m.archived) await DB.unarchiveMovement(m.id); else await DB.archiveMovement(m.id); refreshMovements(); });
-    right.appendChild(badge); right.appendChild(arch);
-    li.appendChild(left); li.appendChild(right); list.appendChild(li);
+
+    right.append(badge, arch);
+    li.append(left, right); list.appendChild(li);
   }
 
-  // aggiorna elenco bobine nel select
   const sel = document.getElementById("mov-spool");
   const keep = sel.value;
   const spools = await DB.listSpools();
@@ -232,27 +251,88 @@ async function archiveDoneTodos(){
 }
 
 /* ===== Analisi ===== */
+function onRangeChange(){
+  const v = document.getElementById("range").value;
+  const from = document.getElementById("date-from");
+  const to = document.getElementById("date-to");
+  const sep = document.getElementById("date-sep");
+  const btn = document.getElementById("btn-apply-range");
+
+  const show = (v === "custom");
+  from.style.display = show ? "" : "none";
+  to.style.display = show ? "" : "none";
+  sep.style.display = show ? "" : "none";
+  btn.style.display = show ? "" : "none";
+
+  if (show){
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth()-1, now.getDate());
+    from.valueAsDate = from.value ? new Date(from.value) : start;
+    to.valueAsDate   = to.value   ? new Date(to.value)   : now;
+  } else {
+    renderAnalytics();
+  }
+}
+
 async function renderAnalytics(){
   const range = document.getElementById("range").value;
   const rows = await DB.listMovements(state.username,"all",true);
-  const now = new Date(); const start = new Date(0);
-  if (range==="year") start.setFullYear(now.getFullYear(),0,1);
-  else if (range==="month") start.setFullYear(now.getFullYear(), now.getMonth(), 1);
-  else if (range==="week"){ const wd = now.getDay()||7; start.setFullYear(now.getFullYear(), now.getMonth(), now.getDate()-wd+1); }
+
+  let start = new Date(0), end = new Date();
+  const now = new Date();
+
+  if (range === "year"){ start = new Date(now.getFullYear(),0,1); }
+  else if (range === "month"){ start = new Date(now.getFullYear(), now.getMonth(), 1); }
+  else if (range === "week"){
+    const wd = now.getDay() || 7;
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - wd + 1);
+  }
+  else if (range === "custom"){
+    const f = document.getElementById("date-from").value;
+    const t = document.getElementById("date-to").value;
+    if (f) start = new Date(f);
+    if (t) end   = new Date(t);
+  }
+
+  const toUTC0 = (d)=>new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  start = toUTC0(start); end = toUTC0(end);
 
   const data = rows.map(r=>({...r, d:new Date(r.date)}))
-                   .filter(r=>r.d >= new Date(Date.UTC(start.getFullYear(),start.getMonth(),start.getDate())))
+                   .filter(r=> r.d >= start && r.d <= new Date(end.getTime()+86400000-1))
                    .sort((a,b)=>a.d-b.d);
 
-  // saldo cumulato con step (costante tra movimenti)
-  let cum=0; const pts=[];
+  // Bucket giornaliero
+  const byDay = new Map();
   for (const r of data){
-    const d = new Date(Date.UTC(r.d.getUTCFullYear(), r.d.getUTCMonth(), r.d.getUTCDate()));
-    if (pts.length) pts.push({x:new Date(d.getTime()-1), y:cum});
-    cum += r.amount; pts.push({x:d, y:cum});
+    const key = toUTC0(r.d).toISOString();
+    const prev = byDay.get(key) || 0;
+    byDay.set(key, prev + r.amount);
   }
-  const points = pts.length ? pts : [{x:new Date(),y:0}];
-  drawLineChart(document.getElementById("chart"), points, {step:true});
+  const days = Array.from(byDay.keys()).sort().map(k=>({ x:new Date(k), val: byDay.get(k) }));
+
+  // Cumulato (step)
+  let cum = 0;
+  const pts = [];
+  for (const d of days){
+    if (pts.length) pts.push({ x:new Date(d.x.getTime()-1), y:cum });
+    cum += d.val;
+    pts.push({ x:d.x, y:cum });
+  }
+  let points = pts.length ? pts : [{ x:new Date(), y:0 }];
+
+  // Downsample se necessario
+  const MAX_POINTS = 2000;
+  if (points.length > MAX_POINTS){
+    const step = Math.ceil(points.length / MAX_POINTS);
+    const slim = [];
+    for (let i=0;i<points.length;i+=step){ slim.push(points[i]); }
+    if (slim[slim.length-1].x.getTime() !== points[points.length-1].x.getTime()){
+      slim.push(points[points.length-1]);
+    }
+    points = slim;
+  }
+
+  drawLineChart(document.getElementById("chart"), points, { step:true });
 
   // KPI + trend
   const sales = data.filter(r=>r.amount>0);
@@ -263,7 +343,6 @@ async function renderAnalytics(){
   const tx = data.length, pos = sales.length, neg = data.filter(r=>r.amount<0).length;
   const f = n=>new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(n);
 
-  // regressione lineare semplificata
   let slope=0; if (points.length>=2){
     let sx=0,sy=0,sxx=0,sxy=0; for (let i=0;i<points.length;i++){ const x=i,y=points[i].y; sx+=x; sy+=y; sxx+=x*x; sxy+=x*y; }
     slope = (points.length*sxy - sx*sy) / Math.max(1,(points.length*sxx - sx*sx));

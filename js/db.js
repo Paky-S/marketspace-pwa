@@ -39,11 +39,11 @@ const DB = (()=>{
   function _get(store,id){ return new Promise((res,rej)=>{ const [tx,st]=_tx(store,"readonly"); const r=st.get(id); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
   function _patch(store,id,patch){ return new Promise((res,rej)=>{ const [tx,st]=_tx(store,"readwrite"); const r=st.get(id);
     r.onsuccess=()=>{ let row=r.result; if(!row) return res(false); const delta=(typeof patch==="function")?patch(row):patch; Object.assign(row,delta); const p=st.put(row); p.onsuccess=()=>res(true); p.onerror=()=>rej(p.error); }; r.onerror=()=>rej(r.error); }); }
-  function _setFlag(store,id,flags){ return _patch(store,id,flags); }
+  const _setFlag = (store,id,flags)=>_patch(store,id,flags);
 
   // Movements
-  async function addMovement(m){ return _put("movements", m); }
-  async function listMovements(username, filter="all", showArchived=false){
+  const addMovement = (m)=>_put("movements", m);
+  function listMovements(username, filter="all", showArchived=false){
     return new Promise((res,rej)=>{
       const [tx,st]=_tx("movements","readonly");
       const idx=st.index("by_user"); const r=idx.getAll(IDBKeyRange.only(username));
@@ -58,8 +58,8 @@ const DB = (()=>{
   const unarchiveMovement = (id)=>_setFlag("movements",id,{archived:false});
 
   // Tasks
-  async function addTask(t){ return _put("tasks", t); }
-  async function listTasks(username, showArchived=false){
+  const addTask = (t)=>_put("tasks", t);
+  function listTasks(username, showArchived=false){
     return new Promise((res,rej)=>{
       const [tx,st]=_tx("tasks","readonly");
       const idx=st.index("by_user"); const r=idx.getAll(IDBKeyRange.only(username));
@@ -103,7 +103,6 @@ const DB = (()=>{
     if(!obj||!obj.meta||!obj.payload) return false;
     const raw = JSON.stringify(obj.payload);
     if ((await sha256(raw)) !== obj.meta.checksum) return false;
-    // pulizia selettiva utente
     await _clearUser(username);
     await _batchPut("movements",(obj.payload.movements||[]).map(m=>({...m, username, archived:!!m.archived})));
     await _batchPut("tasks",(obj.payload.tasks||[]).map(t=>({...t, username, archived:!!t.archived})));

@@ -1,4 +1,4 @@
-// Canvas line chart con assi, tacche, tooltip; altezza fissa; supporto step
+// Canvas line chart con assi, tacche, tooltip; supporto linea continua o step
 function drawLineChart(canvas, points, opts={}){
   const DPR = window.devicePixelRatio || 1;
   const Wcss = canvas.clientWidth || 600;
@@ -48,7 +48,7 @@ function drawLineChart(canvas, points, opts={}){
   // Assi
   ctx.beginPath(); ctx.moveTo(padL, H - padB); ctx.lineTo(W - padR, H - padB); ctx.moveTo(padL, padT); ctx.lineTo(padL, H - padB); ctx.stroke();
 
-  // Linea
+  // Linea (continua o step)
   ctx.strokeStyle = colLine; ctx.lineWidth = 2*DPR; ctx.beginPath();
   for(let i=0;i<points.length;i++){
     const p=points[i]; const x=x2px(p.x.getTime()), y=y2px(p.y);

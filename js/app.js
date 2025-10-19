@@ -1,4 +1,4 @@
-// MarketSpace v1.3.3 (Movimenti UI semplificata + ToDo colori opachi)
+// MarketSpace v1.3.4 (To-Do: colori opachi + Modifica/Elimina; Analisi: linea continua)
 const state = {
   version: "0.0.0",
   username: "default",
@@ -277,15 +277,34 @@ async function refreshTodos(){
     if (t.archived) li.classList.add("archived");
     const prClass = t.priority ? ("prio-"+t.priority.replace(/_/g,"-")) : "";
     if (prClass) li.classList.add(prClass);
+
     const left = document.createElement("div");
     const prTxt = { "very-high":"Molto alta", "high":"Alta", "normal":"Normale", "low":"Bassa" }[t.priority] || t.priority;
     left.innerHTML = `<div><strong>${t.description}</strong></div><div class="muted">Priorità: ${prTxt}</div>`;
+
     const right = document.createElement("div"); right.className="item-actions";
     const done = document.createElement("button"); done.className="icon-btn"; done.textContent = t.done?"☑️":"⬜";
     done.addEventListener("click",async()=>{ await DB.toggleTask(t.id, !t.done); refreshTodos(); });
+
+    const edit = document.createElement("button"); edit.className="icon-btn"; edit.textContent = "Modifica";
+    edit.addEventListener("click", async ()=>{
+      const newDesc = prompt("Modifica descrizione:", t.description);
+      if (newDesc === null) return;
+      let newPrio = prompt('Priorità (very-high, high, normal, low):', t.priority) || t.priority;
+      newPrio = ["very-high","high","normal","low"].includes(newPrio) ? newPrio : t.priority;
+      await DB.editTask(t.id, { description: newDesc.trim(), priority: newPrio });
+      refreshTodos();
+    });
+
     const arch = document.createElement("button"); arch.className="icon-btn"; arch.textContent = t.archived?"Ripristina":"Archivia";
     arch.addEventListener("click",async()=>{ if(t.archived) await DB.unarchiveTask(t.id); else await DB.archiveTask(t.id); refreshTodos(); });
-    right.append(done,arch);
+
+    const del = document.createElement("button"); del.className="icon-btn"; del.textContent = "Elimina";
+    del.addEventListener("click", async ()=>{
+      if (confirm("Eliminare questa attività?")){ await DB.deleteTask(t.id); refreshTodos(); }
+    });
+
+    right.append(done, edit, arch, del);
     li.append(left,right); list.appendChild(li);
   }
 }
@@ -346,24 +365,22 @@ async function renderAnalytics(){
                    .filter(r=> r.d >= start && r.d <= new Date(end.getTime()+86400000-1))
                    .sort((a,b)=>a.d-b.d);
 
-  // Bucket giornaliero
+  // Bucket giornaliero (somma per giorno)
   const byDay = new Map();
   for (const r of data){
     const key = toUTC0(r.d).toISOString();
-    const prev = byDay.get(key) || 0;
-    byDay.set(key, prev + r.amount);
+    byDay.set(key, (byDay.get(key)||0) + r.amount);
   }
   const days = Array.from(byDay.keys()).sort().map(k=>({ x:new Date(k), val: byDay.get(k) }));
 
-  // Cumulato (step)
+  // Cumulato LINEARE (un punto per giorno, nessun punto extra)
   let cum = 0;
-  const pts = [];
+  let points = [];
   for (const d of days){
-    if (pts.length) pts.push({ x:new Date(d.x.getTime()-1), y:cum });
     cum += d.val;
-    pts.push({ x:d.x, y:cum });
+    points.push({ x:d.x, y:cum });
   }
-  let points = pts.length ? pts : [{ x:new Date(), y:0 }];
+  if (!points.length) points = [{ x:new Date(), y:0 }];
 
   // Downsample se necessario
   const MAX_POINTS = 2000;
@@ -377,9 +394,10 @@ async function renderAnalytics(){
     points = slim;
   }
 
-  drawLineChart(document.getElementById("chart"), points, { step:true });
+  // Disegna linea CONTINUA (non "step")
+  drawLineChart(document.getElementById("chart"), points, { step:false });
 
-  // KPI + trend
+  // KPI + trend (impaginati a colonna)
   const sales = data.filter(r=>r.amount>0);
   const sum = a=>a.reduce((x,y)=>x+y,0);
   const totalSales = sum(sales.map(s=>s.amount));
@@ -394,7 +412,11 @@ async function renderAnalytics(){
   }
   const trendTxt = slope>0.5 ? "Trend in crescita" : (slope<-0.5 ? "Trend in calo" : "Trend stabile");
 
-  document.getElementById("stats").textContent =
-    `Transazioni: ${tx} · Giorni +: ${pos} · Giorni –: ${neg} · Vendite: ${f(totalSales)} · Costo materiale: ${f(matCost)} · Utile stimato: ${f(profit)}`;
+  document.getElementById("stats").innerHTML =
+    `<div>Transazioni: ${tx}</div>
+     <div>Entrate: ${pos} · Uscite: ${neg}</div>
+     <div>Vendite: ${f(totalSales)}</div>
+     <div>Costo materiale: ${f(matCost)}</div>
+     <div>Utile stimato: ${f(profit)}</div>`;
   document.getElementById("trend").textContent = trendTxt;
 }

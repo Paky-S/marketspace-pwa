@@ -39,6 +39,7 @@ const DB = (()=>{
   function _get(store,id){ return new Promise((res,rej)=>{ const [tx,st]=_tx(store,"readonly"); const r=st.get(id); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
   function _patch(store,id,patch){ return new Promise((res,rej)=>{ const [tx,st]=_tx(store,"readwrite"); const r=st.get(id);
     r.onsuccess=()=>{ let row=r.result; if(!row) return res(false); const delta=(typeof patch==="function")?patch(row):patch; Object.assign(row,delta); const p=st.put(row); p.onsuccess=()=>res(true); p.onerror=()=>rej(p.error); }; r.onerror=()=>rej(r.error); }); }
+  function _del(store,id){ return new Promise((res,rej)=>{ const [tx,st]=_tx(store,"readwrite"); const r=st.delete(id); r.onsuccess=()=>res(true); r.onerror=()=>rej(r.error); }); }
   const _setFlag = (store,id,flags)=>_patch(store,id,flags);
 
   // Movements
@@ -74,6 +75,8 @@ const DB = (()=>{
     });
   }
   const toggleTask = (id,done)=>_patch("tasks",id,{done});
+  const editTask   = (id,patch)=>_patch("tasks",id,patch);
+  const deleteTask = (id)=>_del("tasks",id);
   const archiveTask = (id)=>_setFlag("tasks",id,{archived:true});
   const unarchiveTask = (id)=>_setFlag("tasks",id,{archived:false});
 
@@ -118,8 +121,9 @@ const DB = (()=>{
   }); }
   async function sha256(text){ const enc=new TextEncoder().encode(text); const hash = await crypto.subtle.digest("SHA-256", enc); return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,"0")).join(""); }
 
-  return { open, addMovement, listMovements, archiveMovement, unarchiveMovement,
-           addTask, listTasks, toggleTask, archiveTask, unarchiveTask,
-           addSpool, listSpools, getSpool, addSpoolStock, consumeSpool, editSpool, archiveSpool,
-           setMeta, getMeta, exportAll, importAll };
+  return { open,
+    addMovement, listMovements, archiveMovement, unarchiveMovement,
+    addTask, listTasks, toggleTask, editTask, deleteTask, archiveTask, unarchiveTask,
+    addSpool, listSpools, getSpool, addSpoolStock, consumeSpool, editSpool, archiveSpool,
+    setMeta, getMeta, exportAll, importAll };
 })();

@@ -61,7 +61,7 @@ input[type="date"]{width:100%}
 .tab.active{border-color:var(--accent-weak);background:color-mix(in srgb,var(--accent-weak) 20%,transparent)}
 .tab span{font-size:.85rem}
 
-/* Icone maschera (bianco/nero auto) */
+/* Icone (auto bianche/nere tramite bg currentColor) */
 .icon{width:24px;height:24px;display:inline-block;background:var(--fg);
   -webkit-mask-repeat:no-repeat;-webkit-mask-position:center;-webkit-mask-size:contain;mask-repeat:no-repeat;mask-position:center;mask-size:contain}
 .icon-mov{-webkit-mask-image:url("../assets/icons/movimenti.svg");mask-image:url("../assets/icons/movimenti.svg")}
@@ -72,11 +72,11 @@ input[type="date"]{width:100%}
 .chk{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
 .archived{opacity:.7;filter:grayscale(.25)}
 
-/* To-Do: colori priorità OPACHI */
-.list li.prio-very-high { background:color-mix(in srgb, #f97316 18%, var(--bg)); color:var(--fg); border-color:transparent; }
-.list li.prio-high      { background:color-mix(in srgb, #f59e0b 16%, var(--bg)); color:var(--fg); border-color:transparent; }
-.list li.prio-normal    { background:color-mix(in srgb, #10b981 14%, var(--bg)); color:var(--fg); border-color:transparent; }
-.list li.prio-low       { background:color-mix(in srgb, #3b82f6 14%, var(--bg)); color:var(--fg); border-color:transparent; }
+/* To-Do: colori priorità MOLTO OPACHI (trasparenza alta) */
+.list li.prio-very-high { background:color-mix(in srgb, #f97316 10%, var(--bg)); color:var(--fg); border-color:var(--border); }
+.list li.prio-high      { background:color-mix(in srgb, #f59e0b 8%,  var(--bg)); color:var(--fg); border-color:var(--border); }
+.list li.prio-normal    { background:color-mix(in srgb, #10b981 7%,  var(--bg)); color:var(--fg); border-color:var(--border); }
+.list li.prio-low       { background:color-mix(in srgb, #3b82f6 7%,  var(--bg)); color:var(--fg); border-color:var(--border); }
 
 /* Chart */
 .chart-wrap{height:var(--chart-h);position:relative}
@@ -87,7 +87,7 @@ input[type="date"]{width:100%}
 dialog::backdrop{background:rgba(0,0,0,.35)}
 dialog{border:0;border-radius:16px;padding:0;background:transparent}
 
-/* Subgroup (sotto riquadro) */
+/* Subgroup (sotto riquadro in Movimenti) */
 .subgroup{border-top:1px dashed var(--border); padding-top:10px; margin-top:6px}
 
 /* Evita zoom iOS */

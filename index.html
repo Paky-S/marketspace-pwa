@@ -56,16 +56,18 @@
             </div>
 
             <!-- SOTTO RIQUADRO -->
-            <div class="subgroup">
-              <div class="row">
-                <label for="mov-spool">Filamento (opzionale)</label>
-                <select id="mov-spool"><option value="">— nessuno —</option></select>
+            <section id="page-movimenti2" class="page" aria-label="Movimenti2">
+              <div class="subgroup">
+                <div class="row">
+                  <label for="mov-spool">Filamento (opzionale)</label>
+                  <select id="mov-spool"><option value="">— nessuno —</option></select>
+                </div>
+                <div class="row" id="row-grams" hidden>
+                  <label for="mov-grams">Grammi usati (solo per vendite)</label>
+                  <input id="mov-grams" inputmode="numeric" type="number" step="1" min="0" placeholder="es. 95">
+                </div>
               </div>
-              <div class="row" id="row-grams" hidden>
-                <label for="mov-grams">Grammi usati (solo per vendite)</label>
-                <input id="mov-grams" inputmode="numeric" type="number" step="1" min="0" placeholder="es. 95">
-              </div>
-            </div>
+            </section>
 
             <div class="row actions">
               <button type="submit" class="btn primary" id="btn-add">Aggiungi</button>

@@ -1,9 +1,10 @@
-// MarketSpace v1.3.2 (Entrata/Uscita + boot robusto)
+// MarketSpace v1.3.3 (Movimenti UI semplificata + ToDo colori opachi)
 const state = {
   version: "0.0.0",
   username: "default",
   currentPage: "page-movimenti",
   palette: "blue",
+  submitMode: "add" // "add" | "sub"
 };
 
 const PALETTES = {
@@ -83,31 +84,18 @@ function bindEvents(){
   document.getElementById("btn-export").addEventListener("click", onExport);
   document.getElementById("file-import").addEventListener("change", e=>onImport(e.target.files[0]));
 
-  // NUOVO: pulsante Sottrai (setta tipo=Uscita e invia)
+  // Pulsanti Aggiungi/Sottrai
   const btnSub = document.getElementById("btn-sub");
   if (btnSub){
     btnSub.addEventListener("click", ()=>{
-      const out = document.querySelector('input[name="mov-type"][value="out"]');
-      if (out) out.checked = true;
+      state.submitMode = "sub";
       document.getElementById("mov-form").requestSubmit();
     });
   }
-  // Mostra/nasconde riga grammi al cambio tipo
-  document.querySelectorAll('input[name="mov-type"]').forEach(r=>{
-    r.addEventListener('change', onSpoolChange);
-  });
-
-  // Magazzino
-  document.getElementById("btn-add-spool").addEventListener("click", onAddSpool);
-
-  // To-Do
-  document.getElementById("todo-form").addEventListener("submit", onAddTodo);
-  document.getElementById("todo-show-arch").addEventListener("change", refreshTodos);
-  document.getElementById("btn-archive-done").addEventListener("click", archiveDoneTodos);
-
-  // Analisi
-  document.getElementById("range").addEventListener("change", onRangeChange);
-  document.getElementById("btn-apply-range").addEventListener("click", (e)=>{ e.preventDefault(); renderAnalytics(); });
+  const btnAdd = document.getElementById("btn-add");
+  if (btnAdd){
+    btnAdd.addEventListener("click", ()=>{ state.submitMode = "add"; });
+  }
 }
 
 function switchPage(id){
@@ -125,30 +113,36 @@ function switchPage(id){
 /* ===== Movimenti ===== */
 function onSpoolChange(){
   const sel = document.getElementById("mov-spool");
-  const isIn = document.querySelector('input[name="mov-type"]:checked')?.value === "in";
   const row = document.getElementById("row-grams");
-  if (row) row.hidden = !(sel && sel.value && isIn);
+  if (row) row.hidden = !(sel && sel.value);
 }
+
 async function onAddMovement(ev){
   ev.preventDefault();
 
-  // Importo sempre positivo in input
+  // 1) Importo (solo positivo)
   let amount = Number(String(document.getElementById("mov-amount").value).replace(",","."));
   if (!Number.isFinite(amount) || amount<=0) return alert("Inserisci un importo valido (> 0).");
 
-  const type = document.querySelector('input[name="mov-type"]:checked')?.value || "in";
-  amount = (type === "out") ? -Math.abs(amount) : Math.abs(amount);
+  // 2) Modalità
+  const isAdd = state.submitMode === "add";
+  amount = isAdd ? Math.abs(amount) : -Math.abs(amount);
 
+  // 3) Campi base
+  const itemName = document.getElementById("mov-item").value.trim();
   const desc = document.getElementById("mov-desc").value.trim();
+  if (!itemName) return alert("Inserisci il Nome Oggetto.");
+  if (!desc) return alert("Inserisci la Descrizione.");
+
   const dInp = document.getElementById("mov-date");
   const d = dInp && dInp.value ? new Date(dInp.value) : new Date();
   const iso = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
 
+  // 4) Filamento/grammi (solo per Aggiungi)
   let spoolId = document.getElementById("mov-spool")?.value || null;
   let gramsUsed = 0, materialCost = 0;
 
-  // i grammi/materialCost hanno senso solo per ENTRATA
-  if (type === "in" && spoolId){
+  if (isAdd && spoolId){
     gramsUsed = Number(document.getElementById("mov-grams").value);
     if (!Number.isFinite(gramsUsed) || gramsUsed<=0) return alert("Inserisci i grammi usati (>0) o deseleziona il filamento.");
     const s = await DB.getSpool(Number(spoolId));
@@ -156,19 +150,28 @@ async function onAddMovement(ev){
     if (s.grams_available < gramsUsed) return alert("Grammatura insufficiente in magazzino.");
     materialCost = s.price_per_kg * (gramsUsed/1000);
     await DB.consumeSpool(s.id, gramsUsed);
-  } else { spoolId=null; gramsUsed=0; materialCost=0; }
+  } else {
+    spoolId=null; gramsUsed=0; materialCost=0;
+  }
 
-  await DB.addMovement({username:state.username, amount, description:desc, date:iso, archived:false, spoolId, gramsUsed, materialCost});
+  // 5) Salva
+  await DB.addMovement({
+    username:state.username,
+    amount, description:desc, itemName,
+    date:iso, archived:false,
+    spoolId, gramsUsed, materialCost
+  });
 
-  // reset form
+  // 6) Reset form
   document.getElementById("mov-amount").value = "";
+  document.getElementById("mov-item").value = "";
   document.getElementById("mov-desc").value = "";
   const g = document.getElementById("mov-grams"); if (g) g.value = "";
   const sp = document.getElementById("mov-spool"); if (sp) sp.value = "";
-  const inRadio = document.querySelector('input[name="mov-type"][value="in"]'); if (inRadio) inRadio.checked = true;
-
-  onSpoolChange();
   if (dInp) dInp.valueAsDate = new Date();
+  onSpoolChange();
+  state.submitMode = "add";
+
   refreshMovements();
 }
 
@@ -191,7 +194,8 @@ async function refreshMovements(){
       const costStr = new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(m.materialCost||0);
       extra=` · Filamento: #${m.spoolId} · ${m.gramsUsed} g (costo ${costStr})`;
     }
-    left.innerHTML = `<div><strong>${amountStr}</strong> — ${m.description||""}${extra}</div><div class="muted">${dateStr}</div>`;
+    const namePart = m.itemName ? `<strong>${m.itemName}</strong> — ` : "";
+    left.innerHTML = `<div>${namePart}${amountStr} — ${m.description||""}${extra}</div><div class="muted">${dateStr}</div>`;
 
     const badge = document.createElement("span"); badge.className = "badge " + (m.amount>=0 ? "ok":"danger"); badge.textContent = (m.amount>=0) ? "Entrata":"Uscita";
     const arch = document.createElement("button"); arch.className="icon-btn"; arch.textContent = m.archived?"Ripristina":"Archivia";

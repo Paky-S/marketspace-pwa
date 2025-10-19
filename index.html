@@ -55,19 +55,18 @@
               <input id="mov-date" type="date" required>
             </div>
 
-            <!-- SOTTO RIQUADRO -->
-            <section id="page-movimenti2" class="page active" aria-label="Movimenti2">
-              <div class="subgroup">
-                <div class="row">
-                  <label for="mov-spool">Filamento (opzionale)</label>
-                  <select id="mov-spool"><option value="">— nessuno —</option></select>
-                </div>
-                <div class="row" id="row-grams" hidden>
-                  <label for="mov-grams">Grammi usati (solo per vendite)</label>
-                  <input id="mov-grams" inputmode="numeric" type="number" step="1" min="0" placeholder="es. 95">
-                </div>
+            <!-- SOTTO RIQUADRO (DISTACCATO/OPZIONALE) -->
+            <div class="subgroup">
+              <div class="subgroup-title">Opzionale — dati filamento</div>
+              <div class="row">
+                <label for="mov-spool">Filamento (opzionale)</label>
+                <select id="mov-spool"><option value="">— nessuno —</option></select>
               </div>
-            </section>
+              <div class="row" id="row-grams" hidden>
+                <label for="mov-grams">Grammi usati (solo per vendite)</label>
+                <input id="mov-grams" inputmode="numeric" type="number" step="1" min="0" placeholder="es. 95">
+              </div>
+            </div>
 
             <div class="row actions">
               <button type="submit" class="btn primary" id="btn-add">Aggiungi</button>
@@ -120,7 +119,7 @@
               </select>
             </div>
             <div class="row actions">
-              <button type="submit" class="btn primary">Aggiungi</button>
+              <button type="submit" class="btn primary" id="todo-add-btn">Aggiungi</button>
               <button type="button" id="btn-archive-done" class="btn">Archivia completate</button>
             </div>
           </form>

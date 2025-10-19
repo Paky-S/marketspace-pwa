@@ -1,4 +1,4 @@
-// MarketSpace v1.3.4 (To-Do: colori opachi + Modifica/Elimina; Analisi: linea continua)
+// MarketSpace v1.3.5 (Subgroup distaccato + fix submit To-Do)
 const state = {
   version: "0.0.0",
   username: "default",
@@ -62,40 +62,49 @@ async function boot(){
 document.addEventListener("DOMContentLoaded", boot);
 
 function bindEvents(){
+  const $ = (id)=>document.getElementById(id);
+  const on = (el,ev,fn)=>{ if(el) el.addEventListener(ev,fn); };
+
   document.querySelectorAll(".tab").forEach(btn=>{
     btn.addEventListener("click",()=>switchPage(btn.dataset.target));
   });
 
   // Impostazioni
-  const dlg = document.getElementById("dlg-settings");
-  document.getElementById("btn-settings").addEventListener("click", ()=>{
-    document.getElementById("set-palette").value = state.palette || "blue";
+  const dlg = $("dlg-settings");
+  on($("btn-settings"),"click",()=>{
+    $("set-palette").value = state.palette || "blue";
     dlg.showModal();
   });
-  document.getElementById("set-palette").addEventListener("change", (e)=>{
-    applyPalette(e.target.value);
-  });
+  on($("set-palette"),"change",(e)=>applyPalette(e.target.value));
 
   // Movimenti
-  document.getElementById("mov-form").addEventListener("submit", onAddMovement);
-  document.getElementById("mov-filter").addEventListener("change", refreshMovements);
-  document.getElementById("mov-show-arch").addEventListener("change", refreshMovements);
-  document.getElementById("mov-spool").addEventListener("change", onSpoolChange);
-  document.getElementById("btn-export").addEventListener("click", onExport);
-  document.getElementById("file-import").addEventListener("change", e=>onImport(e.target.files[0]));
+  on($("mov-form"),"submit", onAddMovement);
+  on($("mov-filter"),"change", refreshMovements);
+  on($("mov-show-arch"),"change", refreshMovements);
+  on($("mov-spool"),"change", onSpoolChange);
+  on($("btn-export"),"click", onExport);
+  on($("file-import"),"change", e=>onImport(e.target.files[0]));
+  on($("btn-sub"),"click", ()=>{ state.submitMode="sub"; $("mov-form").requestSubmit(); });
+  on($("btn-add"),"click", ()=>{ state.submitMode="add"; });
 
-  // Pulsanti Aggiungi/Sottrai
-  const btnSub = document.getElementById("btn-sub");
-  if (btnSub){
-    btnSub.addEventListener("click", ()=>{
-      state.submitMode = "sub";
-      document.getElementById("mov-form").requestSubmit();
-    });
+  // Magazzino
+  on($("btn-add-spool"),"click", onAddSpool);
+
+  // To-Do (binding robusto)
+  const todoForm = $("todo-form");
+  if (todoForm){
+    on(todoForm, "submit", onAddTodo);
+    const addBtn = $("todo-add-btn");
+    if (addBtn){
+      on(addBtn, "click", (e)=>{ e.preventDefault(); onAddTodo(e); });
+    }
   }
-  const btnAdd = document.getElementById("btn-add");
-  if (btnAdd){
-    btnAdd.addEventListener("click", ()=>{ state.submitMode = "add"; });
-  }
+  on($("todo-show-arch"),"change", refreshTodos);
+  on($("btn-archive-done"),"click", archiveDoneTodos);
+
+  // Analisi
+  on($("range"),"change", onRangeChange);
+  on($("btn-apply-range"),"click", (e)=>{ e.preventDefault(); renderAnalytics(); });
 }
 
 function switchPage(id){
@@ -259,15 +268,21 @@ async function onImport(file){
 }
 
 /* ===== To-Do ===== */
+let _addingTodo = false;
 async function onAddTodo(ev){
   ev.preventDefault();
-  const desc = document.getElementById("todo-desc").value.trim();
-  const prio = document.getElementById("todo-priority").value;
-  if (!desc) return;
-  await DB.addTask({username:state.username, description:desc, done:false, priority:prio, archived:false});
-  document.getElementById("todo-desc").value = "";
-  refreshTodos();
+  if (_addingTodo) return;
+  _addingTodo = true;
+  try{
+    const desc = document.getElementById("todo-desc").value.trim();
+    const prio = document.getElementById("todo-priority").value;
+    if (!desc){ _addingTodo=false; return; }
+    await DB.addTask({username:state.username, description:desc, done:false, priority:prio, archived:false});
+    document.getElementById("todo-desc").value = "";
+    await refreshTodos();
+  } finally { _addingTodo=false; }
 }
+
 async function refreshTodos(){
   const showArch = document.getElementById("todo-show-arch").checked;
   const list = document.getElementById("todo-list"); list.innerHTML="";
@@ -307,11 +322,6 @@ async function refreshTodos(){
     right.append(done, edit, arch, del);
     li.append(left,right); list.appendChild(li);
   }
-}
-async function archiveDoneTodos(){
-  const items = await DB.listTasks(state.username,false);
-  for (const t of items) if (t.done) await DB.archiveTask(t.id);
-  refreshTodos();
 }
 
 /* ===== Analisi ===== */

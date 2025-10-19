@@ -1,5 +1,5 @@
 // SW con cache bust per evitare versioni vecchie
-const CACHE_NAME = 'marketspace-v1.3.2';
+const CACHE_NAME = 'marketspace-v1.3.8';
 
 self.addEventListener('install', (e)=>{
   self.skipWaiting();

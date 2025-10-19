@@ -1,4 +1,4 @@
-// MarketSpace v1.3.5 (Subgroup distaccato + fix submit To-Do)
+// MarketSpace v1.3.8 (live chart + azioni movimenti + fix submit To-Do)
 const state = {
   version: "0.0.0",
   username: "default",
@@ -90,14 +90,11 @@ function bindEvents(){
   // Magazzino
   on($("btn-add-spool"),"click", onAddSpool);
 
-  // To-Do (binding robusto)
+  // To-Do
   const todoForm = $("todo-form");
   if (todoForm){
     on(todoForm, "submit", onAddTodo);
-    const addBtn = $("todo-add-btn");
-    if (addBtn){
-      on(addBtn, "click", (e)=>{ e.preventDefault(); onAddTodo(e); });
-    }
+    on($("todo-add-btn"),"click", (e)=>{ e.preventDefault(); onAddTodo(e); });
   }
   on($("todo-show-arch"),"change", refreshTodos);
   on($("btn-archive-done"),"click", archiveDoneTodos);
@@ -117,6 +114,20 @@ function switchPage(id){
   state.currentPage = id;
   if (id==="page-analisi") renderAnalytics();
   if (id==="page-magazzino") refreshSpools();
+}
+
+/* ===== Helpers icone inline (stile Lucide semplificate) ===== */
+function $ico(name){
+  const ns='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(ns,'svg'); svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('width','18'); svg.setAttribute('height','18');
+  svg.setAttribute('fill','none'); svg.setAttribute('stroke','currentColor'); svg.setAttribute('stroke-width','2'); svg.setAttribute('stroke-linecap','round'); svg.setAttribute('stroke-linejoin','round');
+  const p=(d)=>{ const path=document.createElementNS(ns,'path'); path.setAttribute('d',d); return path; };
+  if(name==='edit'){ svg.append(p('M12 20h9')); svg.append(p('M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z')); }
+  else if(name==='archive'){ svg.append(p('M3 7h18')); svg.append(p('M5 7v12h14V7')); svg.append(p('M9 3h6v4H9z')); }
+  else if(name==='undo'){ svg.append(p('M9 14l-4-4 4-4')); svg.append(p('M5 10h8a6 6 0 1 1 0 12H9')); }
+  else if(name==='trash'){ svg.append(p('M3 6h18')); svg.append(p('M8 6V4h8v2')); svg.append(p('M19 6l-1 14H6L5 6')); }
+  else if(name==='save'){ svg.append(p('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z')); svg.append(p('M17 21V13H7v8')); svg.append(p('M7 3v5h8')); }
+  return svg;
 }
 
 /* ===== Movimenti ===== */
@@ -181,7 +192,8 @@ async function onAddMovement(ev){
   onSpoolChange();
   state.submitMode = "add";
 
-  refreshMovements();
+  await refreshMovements();
+  if (state.currentPage==="page-analisi") renderAnalytics(); // grafico live
 }
 
 async function refreshMovements(){
@@ -206,11 +218,36 @@ async function refreshMovements(){
     const namePart = m.itemName ? `<strong>${m.itemName}</strong> — ` : "";
     left.innerHTML = `<div>${namePart}${amountStr} — ${m.description||""}${extra}</div><div class="muted">${dateStr}</div>`;
 
-    const badge = document.createElement("span"); badge.className = "badge " + (m.amount>=0 ? "ok":"danger"); badge.textContent = (m.amount>=0) ? "Entrata":"Uscita";
-    const arch = document.createElement("button"); arch.className="icon-btn"; arch.textContent = m.archived?"Ripristina":"Archivia";
-    arch.addEventListener("click", async()=>{ if(m.archived) await DB.unarchiveMovement(m.id); else await DB.archiveMovement(m.id); refreshMovements(); });
+    // Pulsanti compatti con icone
+    const mkBtn = (title,icon,handler)=>{
+      const b=document.createElement("button");
+      b.className="icon-btn icon-only"; b.title=title; b.setAttribute("aria-label",title);
+      b.appendChild($ico(icon)); b.addEventListener("click",handler); return b;
+    };
+    const btnEdit = mkBtn("Modifica","edit", async()=>{
+      const newItem = prompt("Nome oggetto:", m.itemName ?? "") ?? m.itemName;
+      if (newItem === null) return;
+      const newDesc = prompt("Descrizione:", m.description ?? "") ?? m.description;
+      if (newDesc === null) return;
+      const newAmtStr = prompt("Importo (usa punto per i decimali):", String(Math.abs(m.amount))) ?? String(Math.abs(m.amount));
+      const newAmt = Number(String(newAmtStr).replace(",", "."));
+      if (!Number.isFinite(newAmt) || newAmt<=0) return alert("Importo non valido.");
+      // mantieni segno originario
+      const finalAmount = (m.amount>=0) ? Math.abs(newAmt) : -Math.abs(newAmt);
+      await DB.editMovement(m.id, { itemName: newItem.trim(), description: newDesc.trim(), amount: finalAmount });
+      await refreshMovements(); if (state.currentPage==="page-analisi") renderAnalytics();
+    });
+    const btnArch = mkBtn(m.archived?"Ripristina":"Archivia", m.archived?"undo":"archive", async()=>{
+      if(m.archived) await DB.unarchiveMovement(m.id); else await DB.archiveMovement(m.id);
+      await refreshMovements(); if (state.currentPage==="page-analisi") renderAnalytics();
+    });
+    const btnDel = mkBtn("Elimina","trash", async()=>{
+      if (!confirm("Eliminare definitivamente questa transazione?")) return;
+      await DB.deleteMovement(m.id);
+      await refreshMovements(); if (state.currentPage==="page-analisi") renderAnalytics();
+    });
 
-    right.append(badge, arch);
+    right.append(btnEdit, btnArch, btnDel);
     li.append(left, right); list.appendChild(li);
   }
 
@@ -239,12 +276,11 @@ async function refreshSpools(){
     left.innerHTML = `<div><strong>${s.name}</strong> — € ${(s.price_per_kg).toFixed(2)}/kg</div><div class="muted">Disponibili: ${s.grams_available} g</div>`;
     const right = document.createElement("div"); right.className="item-actions";
 
-    const add = document.createElement("button"); add.className="icon-btn"; add.textContent="+g";
-    add.addEventListener("click",async()=>{ const g=Number(prompt("Grammi da aggiungere:","100")); if(Number.isFinite(g)&&g>0){ await DB.addSpoolStock(s.id,g); refreshSpools(); }});
-    const edit = document.createElement("button"); edit.className="icon-btn"; edit.textContent="Modifica";
-    edit.addEventListener("click",async()=>{ const name=prompt("Nome/descrizione:",s.name)??s.name; const price=Number(prompt("Prezzo €/kg:",String(s.price_per_kg)))||s.price_per_kg; await DB.editSpool(s.id,{name:name.trim(),price_per_kg:price}); refreshSpools(); });
-    const tog = document.createElement("button"); tog.className="icon-btn"; tog.textContent = s.archived?"Ripristina":"Archivia";
-    tog.addEventListener("click",async()=>{ if(s.archived){ await DB.editSpool(s.id,{archived:false}); } else { await DB.archiveSpool(s.id);} refreshSpools(); });
+    const mkBtn = (title,icon,handler)=>{ const b=document.createElement("button"); b.className="icon-btn icon-only"; b.title=title; b.appendChild($ico(icon)); b.addEventListener("click",handler); return b; };
+
+    const add = mkBtn("Aggiungi grammi","+",async()=>{ const g=Number(prompt("Grammi da aggiungere:","100")); if(Number.isFinite(g)&&g>0){ await DB.addSpoolStock(s.id,g); refreshSpools(); }});
+    const edit = mkBtn("Modifica","edit",async()=>{ const name=prompt("Nome/descrizione:",s.name)??s.name; const price=Number(prompt("Prezzo €/kg:",String(s.price_per_kg)))||s.price_per_kg; await DB.editSpool(s.id,{name:name.trim(),price_per_kg:price}); refreshSpools(); });
+    const tog  = mkBtn(s.archived?"Ripristina":"Archivia", s.archived?"undo":"archive", async()=>{ if(s.archived){ await DB.editSpool(s.id,{archived:false}); } else { await DB.archiveSpool(s.id);} refreshSpools(); });
 
     right.append(add,edit,tog); li.append(left,right); list.appendChild(li);
   }
@@ -298,11 +334,11 @@ async function refreshTodos(){
     left.innerHTML = `<div><strong>${t.description}</strong></div><div class="muted">Priorità: ${prTxt}</div>`;
 
     const right = document.createElement("div"); right.className="item-actions";
-    const done = document.createElement("button"); done.className="icon-btn"; done.textContent = t.done?"☑️":"⬜";
-    done.addEventListener("click",async()=>{ await DB.toggleTask(t.id, !t.done); refreshTodos(); });
 
-    const edit = document.createElement("button"); edit.className="icon-btn"; edit.textContent = "Modifica";
-    edit.addEventListener("click", async ()=>{
+    const mkBtn = (title,icon,handler)=>{ const b=document.createElement("button"); b.className="icon-btn icon-only"; b.title=title; b.setAttribute("aria-label",title); b.appendChild($ico(icon)); b.addEventListener("click",handler); return b; };
+
+    const done = mkBtn(t.done?"Segna come incompleta":"Completa", "save", async()=>{ await DB.toggleTask(t.id, !t.done); refreshTodos(); });
+    const edit = mkBtn("Modifica","edit", async ()=>{
       const newDesc = prompt("Modifica descrizione:", t.description);
       if (newDesc === null) return;
       let newPrio = prompt('Priorità (very-high, high, normal, low):', t.priority) || t.priority;
@@ -310,14 +346,8 @@ async function refreshTodos(){
       await DB.editTask(t.id, { description: newDesc.trim(), priority: newPrio });
       refreshTodos();
     });
-
-    const arch = document.createElement("button"); arch.className="icon-btn"; arch.textContent = t.archived?"Ripristina":"Archivia";
-    arch.addEventListener("click",async()=>{ if(t.archived) await DB.unarchiveTask(t.id); else await DB.archiveTask(t.id); refreshTodos(); });
-
-    const del = document.createElement("button"); del.className="icon-btn"; del.textContent = "Elimina";
-    del.addEventListener("click", async ()=>{
-      if (confirm("Eliminare questa attività?")){ await DB.deleteTask(t.id); refreshTodos(); }
-    });
+    const arch = mkBtn(t.archived?"Ripristina":"Archivia", t.archived?"undo":"archive", async()=>{ if(t.archived) await DB.unarchiveTask(t.id); else await DB.archiveTask(t.id); refreshTodos(); });
+    const del  = mkBtn("Elimina","trash", async()=>{ if (confirm("Eliminare questa attività?")){ await DB.deleteTask(t.id); refreshTodos(); } });
 
     right.append(done, edit, arch, del);
     li.append(left,right); list.appendChild(li);
@@ -404,10 +434,9 @@ async function renderAnalytics(){
     points = slim;
   }
 
-  // Disegna linea CONTINUA (non "step")
   drawLineChart(document.getElementById("chart"), points, { step:false });
 
-  // KPI + trend (impaginati a colonna)
+  // KPI + trend
   const sales = data.filter(r=>r.amount>0);
   const sum = a=>a.reduce((x,y)=>x+y,0);
   const totalSales = sum(sales.map(s=>s.amount));

@@ -48,9 +48,14 @@ input[type="date"]{width:100%}
 .badge{font-size:.85rem;padding:2px 8px;border-radius:999px;border:1px solid var(--border)}
 .badge.ok{background:color-mix(in srgb,var(--ok) 16%,transparent)}
 .badge.danger{background:color-mix(in srgb,var(--danger) 16%,transparent)}
-.item-actions{display:inline-flex;gap:6px}
-.icon-btn{background:transparent;border:1px solid var(--border);padding:8px;border-radius:10px;cursor:pointer}
+.item-actions{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
 
+/* Bottoni icona compatti (mobile-friendly) */
+.icon-btn{background:transparent;border:1px solid var(--border);padding:8px;border-radius:10px;cursor:pointer}
+.icon-btn.icon-only{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.icon-btn svg{width:18px;height:18px}
+
+/* Paginate */
 .page{display:none}
 .page.active{display:block}
 
@@ -61,7 +66,7 @@ input[type="date"]{width:100%}
 .tab.active{border-color:var(--accent-weak);background:color-mix(in srgb,var(--accent-weak) 20%,transparent)}
 .tab span{font-size:.85rem}
 
-/* Icone (auto bianche/nere tramite bg currentColor) */
+/* Icone della bottom bar tramite mask file */
 .icon{width:24px;height:24px;display:inline-block;background:var(--fg);
   -webkit-mask-repeat:no-repeat;-webkit-mask-position:center;-webkit-mask-size:contain;mask-repeat:no-repeat;mask-position:center;mask-size:contain}
 .icon-mov{-webkit-mask-image:url("../assets/icons/movimenti.svg");mask-image:url("../assets/icons/movimenti.svg")}
@@ -87,7 +92,7 @@ input[type="date"]{width:100%}
 dialog::backdrop{background:rgba(0,0,0,.35)}
 dialog{border:0;border-radius:16px;padding:0;background:transparent}
 
-/* Subgroup (sotto riquadro in Movimenti) – DISTACCO EVIDENTE */
+/* Subgroup (opzionale) – distacco evidente */
 .subgroup{
   margin-top:20px;
   padding:14px;
@@ -106,3 +111,9 @@ dialog{border:0;border-radius:16px;padding:0;background:transparent}
 
 /* Evita zoom iOS */
 input,select{font-size:16px}
+
+/* Micro-tweak mobile */
+@media (max-width:420px){
+  .list li{grid-template-columns:1fr auto; gap:6px}
+  .icon-btn.icon-only{width:34px;height:34px}
+}

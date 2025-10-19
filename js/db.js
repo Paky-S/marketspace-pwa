@@ -30,10 +30,38 @@ const DB = (()=>{
           db.createObjectStore("meta",{keyPath:"key"});
         }
       };
-      req.onsuccess = ()=>{ _db=req.result; res(); };
+      req.onsuccess = ()=>{
+        _db=req.result;
+        // Migrazioni post-apertura (non distruttive)
+        _postOpenMigrations().then(res).catch(err=>{ console.warn("migrations:", err); res(); });
+      };
       req.onerror = ()=>rej(req.error);
     });
   }
+
+  async function _postOpenMigrations(){
+    // Imposta archived=false su record storici dove non è definito (evita "archiviazione automatica")
+    const migrated = await getMeta("migrated_archived_defaults");
+    if (migrated) return;
+    await _ensureArchivedDefault("movements");
+    await _ensureArchivedDefault("tasks");
+    await setMeta("migrated_archived_defaults", true);
+  }
+  function _ensureArchivedDefault(store){
+    return new Promise((res,rej)=>{
+      const [tx,st]=_tx(store,"readwrite");
+      const cur = st.openCursor();
+      cur.onsuccess = ()=>{
+        const c = cur.result;
+        if (!c){ res(); return; }
+        const v = c.value;
+        if (v.archived === undefined){ v.archived = false; c.update(v); }
+        cur.result.continue();
+      };
+      cur.onerror = ()=>rej(cur.error);
+    });
+  }
+
   function _tx(store,mode="readonly"){ const tx=_db.transaction(store,mode); return [tx,tx.objectStore(store)]; }
   function _put(store,obj){ return new Promise((res,rej)=>{ const [tx,st]=_tx(store,"readwrite"); const r=st.add(obj); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
   function _get(store,id){ return new Promise((res,rej)=>{ const [tx,st]=_tx(store,"readonly"); const r=st.get(id); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
@@ -43,23 +71,25 @@ const DB = (()=>{
   const _setFlag = (store,id,flags)=>_patch(store,id,flags);
 
   // Movements
-  const addMovement = (m)=>_put("movements", m);
+  const addMovement = (m)=>_put("movements", {...m, archived: !!m.archived});
   function listMovements(username, filter="all", showArchived=false){
     return new Promise((res,rej)=>{
       const [tx,st]=_tx("movements","readonly");
       const idx=st.index("by_user"); const r=idx.getAll(IDBKeyRange.only(username));
-      r.onsuccess=()=>{ let rows=r.result.filter(x=>showArchived?true:!x.archived);
+      r.onsuccess=()=>{ let rows=(r.result||[]).filter(x=>showArchived?true:!x.archived);
         if (filter==="in") rows=rows.filter(x=>x.amount>=0);
         if (filter==="out") rows=rows.filter(x=>x.amount<0);
         rows.sort((a,b)=>new Date(a.date)-new Date(b.date)); res(rows); };
       r.onerror=()=>rej(r.error);
     });
   }
+  const editMovement = (id,patch)=>_patch("movements",id,patch);
+  const deleteMovement = (id)=>_del("movements",id);
   const archiveMovement = (id)=>_setFlag("movements",id,{archived:true});
   const unarchiveMovement = (id)=>_setFlag("movements",id,{archived:false});
 
   // Tasks
-  const addTask = (t)=>_put("tasks", t);
+  const addTask = (t)=>_put("tasks", {...t, archived: !!t.archived});
   function listTasks(username, showArchived=false){
     return new Promise((res,rej)=>{
       const [tx,st]=_tx("tasks","readonly");
@@ -122,7 +152,7 @@ const DB = (()=>{
   async function sha256(text){ const enc=new TextEncoder().encode(text); const hash = await crypto.subtle.digest("SHA-256", enc); return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,"0")).join(""); }
 
   return { open,
-    addMovement, listMovements, archiveMovement, unarchiveMovement,
+    addMovement, listMovements, editMovement, deleteMovement, archiveMovement, unarchiveMovement,
     addTask, listTasks, toggleTask, editTask, deleteTask, archiveTask, unarchiveTask,
     addSpool, listSpools, getSpool, addSpoolStock, consumeSpool, editSpool, archiveSpool,
     setMeta, getMeta, exportAll, importAll };

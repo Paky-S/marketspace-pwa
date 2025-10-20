@@ -1,10 +1,11 @@
-// MarketSpace v1.3.9 (fix boot error, prompt robusti, grafico live, recovery opzionale)
+// MarketSpace v1.4.0 (fix archiveDoneTodos, anti-archiviazione di default, unarchive auto, grafico live)
 const state = {
   version: "0.0.0",
   username: "default",
   currentPage: "page-movimenti",
   palette: "blue",
-  submitMode: "add" // "add" | "sub"
+  submitMode: "add", // "add" | "sub"
+  disableArchive: true // mostra sempre tutto + blocca azioni di archivio
 };
 
 const PALETTES = {
@@ -33,6 +34,18 @@ async function loadConfig(){
   }catch{}
 }
 
+/* ---------- FUNZIONI CHE VENGONO USATE NEI BIND (dichiarate PRIMA) ---------- */
+async function archiveDoneTodos(){
+  if (state.disableArchive){
+    alert("Archivio disattivato: impostazioni → disabilita l'opzione per usare l'archiviazione.");
+    return;
+  }
+  const items = await DB.listTasks(state.username,true);
+  for (const t of items){ if (t.done && !t.archived) await DB.archiveTask(t.id); }
+  refreshTodos();
+}
+/* --------------------------------------------------------------------------- */
+
 async function boot(){
   const hideSplash = ()=>{
     const s = document.getElementById("splash");
@@ -48,21 +61,29 @@ async function boot(){
     }
     try{ await DB.open(); }catch(e){ console.error("IndexedDB:", e); alert("Errore apertura database locale. L'app funziona ma non salverà i dati finché non consenti l'archiviazione."); }
 
+    // carica preferenze
     const pal = await DB.getMeta("palette"); applyPalette(pal||"blue");
-    const date = document.getElementById("mov-date"); if (date) date.valueAsDate = new Date();
+    const da = await DB.getMeta("disableArchive");
+    state.disableArchive = (da === undefined) ? true : !!da;
 
+    const date = document.getElementById("mov-date"); if (date) date.valueAsDate = new Date();
     bindEvents();
 
-    // Recovery opzionale: aggiungi ?unarchive=1 all’URL per disarchiviare tutto (solo se lo vuoi)
-    if (new URL(location.href).searchParams.get("unarchive") === "1"){
-      await recoverUnarchiveAll();
+    // UI iniziale coerente con preferenze
+    document.getElementById("set-disable-archive").checked = state.disableArchive;
+    document.getElementById("mov-show-arch").checked = true;
+    document.getElementById("todo-show-arch").checked = true;
+
+    // Se l'archiviazione è disattivata → ripristina tutto (una tantum all'avvio)
+    if (state.disableArchive){
+      await unarchiveEverything();
     }
 
     await refreshMovements();
     await refreshTodos();
   } catch(e){
     console.error("Boot error:", e);
-    alert("Si è verificato un errore in avvio. Prova a ricaricare la pagina (Ctrl+F5). Controlla la Console per dettagli.");
+    alert("Errore in avvio. Ricarica (Ctrl+F5). Controlla la Console per dettagli.");
   } finally {
     hideSplash();
   }
@@ -81,9 +102,23 @@ function bindEvents(){
   const dlg = $("dlg-settings");
   on($("btn-settings"),"click",()=>{
     $("set-palette").value = state.palette || "blue";
+    $("set-disable-archive").checked = !!state.disableArchive;
     dlg.showModal();
   });
   on($("set-palette"),"change",(e)=>applyPalette(e.target.value));
+  on($("set-disable-archive"),"change", async (e)=>{
+    state.disableArchive = e.target.checked;
+    await DB.setMeta("disableArchive", state.disableArchive);
+    if (state.disableArchive){
+      await unarchiveEverything();
+      // forza show-archiviati a true
+      const msa = $("mov-show-arch"), tsa=$("todo-show-arch");
+      if (msa) msa.checked = true;
+      if (tsa) tsa.checked = true;
+    }
+    await refreshMovements(); await refreshTodos();
+    if (state.currentPage==="page-analisi") renderAnalytics();
+  });
 
   // Movimenti
   on($("mov-form"),"submit", onAddMovement);
@@ -105,7 +140,8 @@ function bindEvents(){
     on($("todo-add-btn"),"click", (e)=>{ e.preventDefault(); onAddTodo(e); });
   }
   on($("todo-show-arch"),"change", refreshTodos);
-  on($("btn-archive-done"),"click", archiveDoneTodos); // <-- ora esiste
+  // ora esiste ed è definita prima del bind
+  on($("btn-archive-done"),"click", archiveDoneTodos);
 
   // Analisi
   on($("range"),"change", onRangeChange);
@@ -205,8 +241,10 @@ async function onAddMovement(ev){
 }
 
 async function refreshMovements(){
-  const filter = document.getElementById("mov-filter").value;
-  const showArch = document.getElementById("mov-show-arch").checked;
+  const filter   = document.getElementById("mov-filter").value;
+  const uiShow   = document.getElementById("mov-show-arch").checked;
+  const showArch = state.disableArchive ? true : uiShow;
+
   const list = document.getElementById("mov-list"); list.innerHTML="";
   const rows = await DB.listMovements(state.username, filter, showArch);
   let saldo=0; for (const m of rows) if (!m.archived) saldo += m.amount;
@@ -226,15 +264,20 @@ async function refreshMovements(){
     const namePart = (m.itemName ? `<strong>${m.itemName}</strong> — ` : "");
     left.innerHTML = `<div>${namePart}${amountStr} — ${m.description||""}${extra}</div><div class="muted">${dateStr}</div>`;
 
-    // Pulsanti compatti con icone
     const mkBtn = (title,icon,handler)=>{
       const b=document.createElement("button");
       b.className="icon-btn icon-only"; b.title=title; b.setAttribute("aria-label",title);
-      b.appendChild($ico(icon)); b.addEventListener("click",handler); return b;
+      b.appendChild($ico(icon));
+      b.addEventListener("click",(ev)=>{
+        if (state.disableArchive && (icon==='archive' || icon==='undo')){
+          ev.preventDefault(); alert("Archivio disattivato: impostazioni → disabilita l'opzione per usare l'archiviazione."); return;
+        }
+        handler();
+      });
+      return b;
     };
 
     const btnEdit = mkBtn("Modifica","edit", async()=>{
-      // prompt ROBUSTI
       const itemRaw = prompt("Nome oggetto:", m.itemName ?? "");
       if (itemRaw === null) return;
       const descRaw = prompt("Descrizione:", m.description ?? "");
@@ -294,7 +337,10 @@ async function refreshSpools(){
     left.innerHTML = `<div><strong>${s.name}</strong> — € ${(s.price_per_kg).toFixed(2)}/kg</div><div class="muted">Disponibili: ${s.grams_available} g</div>`;
     const right = document.createElement("div"); right.className="item-actions";
 
-    const mkBtn = (title,icon,handler)=>{ const b=document.createElement("button"); b.className="icon-btn icon-only"; b.title=title; b.appendChild($ico(icon)); b.addEventListener("click",handler); return b; };
+    const mkBtn = (title,icon,handler)=>{ const b=document.createElement("button"); b.className="icon-btn icon-only"; b.title=title; b.appendChild($ico(icon)); b.addEventListener("click",(ev)=>{
+      if (state.disableArchive && (icon==='archive'||icon==='undo')){ ev.preventDefault(); alert("Archivio disattivato."); return; }
+      handler();
+    }); return b; };
 
     const edit = mkBtn("Modifica","edit",async()=>{ const name=prompt("Nome/descrizione:",s.name)??s.name; const price=Number(prompt("Prezzo €/kg:",String(s.price_per_kg)))||s.price_per_kg; await DB.editSpool(s.id,{name:String(name||"").trim(),price_per_kg:price}); refreshSpools(); });
     const tog  = mkBtn(s.archived?"Ripristina":"Archivia", s.archived?"undo":"archive", async()=>{ if(s.archived){ await DB.editSpool(s.id,{archived:false}); } else { await DB.archiveSpool(s.id);} refreshSpools(); });
@@ -337,7 +383,9 @@ async function onAddTodo(ev){
 }
 
 async function refreshTodos(){
-  const showArch = document.getElementById("todo-show-arch").checked;
+  const uiShow   = document.getElementById("todo-show-arch").checked;
+  const showArch = state.disableArchive ? true : uiShow;
+
   const list = document.getElementById("todo-list"); list.innerHTML="";
   const items = await DB.listTasks(state.username, showArch);
   for (const t of items){
@@ -351,7 +399,10 @@ async function refreshTodos(){
     left.innerHTML = `<div><strong>${t.description}</strong></div><div class="muted">Priorità: ${prTxt}</div>`;
 
     const right = document.createElement("div"); right.className="item-actions";
-    const mkBtn = (title,icon,handler)=>{ const b=document.createElement("button"); b.className="icon-btn icon-only"; b.title=title; b.setAttribute("aria-label",title); b.appendChild($ico(icon)); b.addEventListener("click",handler); return b; };
+    const mkBtn = (title,icon,handler)=>{ const b=document.createElement("button"); b.className="icon-btn icon-only"; b.title=title; b.setAttribute("aria-label",title); b.appendChild($ico(icon)); b.addEventListener("click",(ev)=>{
+      if (state.disableArchive && (icon==='archive'||icon==='undo')){ ev.preventDefault(); alert("Archivio disattivato."); return; }
+      handler();
+    }); return b; };
 
     const done = mkBtn(t.done?"Segna come incompleta":"Completa", "save", async()=>{ await DB.toggleTask(t.id, !t.done); refreshTodos(); });
 
@@ -373,12 +424,6 @@ async function refreshTodos(){
     right.append(done, edit, arch, del);
     li.append(left,right); list.appendChild(li);
   }
-}
-
-async function archiveDoneTodos(){
-  const items = await DB.listTasks(state.username,true);
-  for (const t of items){ if (t.done && !t.archived) await DB.archiveTask(t.id); }
-  refreshTodos();
 }
 
 /* ===== Analisi ===== */
@@ -407,7 +452,7 @@ function onRangeChange(){
 
 async function renderAnalytics(){
   const range = document.getElementById("range").value;
-  const rows = await DB.listMovements(state.username,"all",true);
+  const rows = await DB.listMovements(state.username,"all",true); // analytics usa sempre tutto
 
   let start = new Date(0), end = new Date();
   const now = new Date();
@@ -432,7 +477,6 @@ async function renderAnalytics(){
                    .filter(r=> r.d >= start && r.d <= new Date(end.getTime()+86400000-1))
                    .sort((a,b)=>a.d-b.d);
 
-  // Bucket giornaliero (somma per giorno)
   const byDay = new Map();
   for (const r of data){
     const key = toUTC0(r.d).toISOString();
@@ -440,7 +484,6 @@ async function renderAnalytics(){
   }
   const days = Array.from(byDay.keys()).sort().map(k=>({ x:new Date(k), val: byDay.get(k) }));
 
-  // Cumulato LINEARE (un punto per giorno, nessun punto extra)
   let cum = 0;
   let points = [];
   for (const d of days){
@@ -449,7 +492,6 @@ async function renderAnalytics(){
   }
   if (!points.length) points = [{ x:new Date(), y:0 }];
 
-  // Downsample se necessario
   const MAX_POINTS = 2000;
   if (points.length > MAX_POINTS){
     const step = Math.ceil(points.length / MAX_POINTS);
@@ -463,7 +505,6 @@ async function renderAnalytics(){
 
   drawLineChart(document.getElementById("chart"), points, { step:false });
 
-  // KPI + trend
   const sales = data.filter(r=>r.amount>0);
   const sum = a=>a.reduce((x,y)=>x+y,0);
   const totalSales = sum(sales.map(s=>s.amount));
@@ -487,8 +528,8 @@ async function renderAnalytics(){
   document.getElementById("trend").textContent = trendTxt;
 }
 
-/* ===== Recovery opzionale ===== */
-async function recoverUnarchiveAll(){
+/* ===== Utility: disarchivia tutto se l’archivio è disattivato ===== */
+async function unarchiveEverything(){
   const [movs, tasks] = await Promise.all([
     DB.listMovements(state.username,"all",true),
     DB.listTasks(state.username,true)

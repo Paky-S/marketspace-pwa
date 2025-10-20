@@ -84,7 +84,8 @@
                 <option value="in">Entrate</option>
                 <option value="out">Uscite</option>
               </select>
-              <label class="chk"><input type="checkbox" id="mov-show-arch"> Mostra archiviati</label>
+              <!-- Inizialmente CHECKED -->
+              <label class="chk"><input type="checkbox" id="mov-show-arch" checked> Mostra archiviati</label>
               <div class="saldo">Saldo: <strong id="saldo">0,00 €</strong></div>
             </div>
             <ul id="mov-list" class="list"></ul>
@@ -126,7 +127,8 @@
 
           <div class="card">
             <div class="toolbar">
-              <label class="chk"><input type="checkbox" id="todo-show-arch"> Mostra archiviati</label>
+              <!-- Inizialmente CHECKED -->
+              <label class="chk"><input type="checkbox" id="todo-show-arch" checked> Mostra archiviati</label>
             </div>
             <ul id="todo-list" class="list"></ul>
           </div>
@@ -192,6 +194,13 @@
           </select>
         </div>
 
+        <div class="row">
+          <label class="chk">
+            <input type="checkbox" id="set-disable-archive" checked>
+            Mostra sempre tutto (disattiva archivio)
+          </label>
+        </div>
+
         <div class="row actions" style="justify-content:flex-end;">
           <button value="cancel" class="btn">Chiudi</button>
         </div>
@@ -200,6 +209,7 @@
 
     <script src="js/db.js"></script>
     <script src="js/charts.js"></script>
+    <!-- se non usi questo file puoi rimuoverlo, ma un 404 qui non blocca l'app -->
     <script src="js/adapters/remoteAdapter.js"></script>
     <script src="js/app.js"></script>
   </body>

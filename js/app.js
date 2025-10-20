@@ -1,4 +1,4 @@
-// MarketSpace v1.3.8 (live chart + azioni movimenti + fix submit To-Do)
+// MarketSpace v1.3.9 (fix boot error, prompt robusti, grafico live, recovery opzionale)
 const state = {
   version: "0.0.0",
   username: "default",
@@ -47,14 +47,22 @@ async function boot(){
       try{ await navigator.serviceWorker.register("sw.js"); }catch(e){ console.warn("SW:", e); }
     }
     try{ await DB.open(); }catch(e){ console.error("IndexedDB:", e); alert("Errore apertura database locale. L'app funziona ma non salverà i dati finché non consenti l'archiviazione."); }
+
     const pal = await DB.getMeta("palette"); applyPalette(pal||"blue");
     const date = document.getElementById("mov-date"); if (date) date.valueAsDate = new Date();
+
     bindEvents();
+
+    // Recovery opzionale: aggiungi ?unarchive=1 all’URL per disarchiviare tutto (solo se lo vuoi)
+    if (new URL(location.href).searchParams.get("unarchive") === "1"){
+      await recoverUnarchiveAll();
+    }
+
     await refreshMovements();
     await refreshTodos();
   } catch(e){
     console.error("Boot error:", e);
-    alert("Si è verificato un errore in avvio. Prova a ricaricare la pagina (Ctrl+F5).");
+    alert("Si è verificato un errore in avvio. Prova a ricaricare la pagina (Ctrl+F5). Controlla la Console per dettagli.");
   } finally {
     hideSplash();
   }
@@ -97,7 +105,7 @@ function bindEvents(){
     on($("todo-add-btn"),"click", (e)=>{ e.preventDefault(); onAddTodo(e); });
   }
   on($("todo-show-arch"),"change", refreshTodos);
-  on($("btn-archive-done"),"click", archiveDoneTodos);
+  on($("btn-archive-done"),"click", archiveDoneTodos); // <-- ora esiste
 
   // Analisi
   on($("range"),"change", onRangeChange);
@@ -215,7 +223,7 @@ async function refreshMovements(){
       const costStr = new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(m.materialCost||0);
       extra=` · Filamento: #${m.spoolId} · ${m.gramsUsed} g (costo ${costStr})`;
     }
-    const namePart = m.itemName ? `<strong>${m.itemName}</strong> — ` : "";
+    const namePart = (m.itemName ? `<strong>${m.itemName}</strong> — ` : "");
     left.innerHTML = `<div>${namePart}${amountStr} — ${m.description||""}${extra}</div><div class="muted">${dateStr}</div>`;
 
     // Pulsanti compatti con icone
@@ -224,23 +232,33 @@ async function refreshMovements(){
       b.className="icon-btn icon-only"; b.title=title; b.setAttribute("aria-label",title);
       b.appendChild($ico(icon)); b.addEventListener("click",handler); return b;
     };
+
     const btnEdit = mkBtn("Modifica","edit", async()=>{
-      const newItem = prompt("Nome oggetto:", m.itemName ?? "") ?? m.itemName;
-      if (newItem === null) return;
-      const newDesc = prompt("Descrizione:", m.description ?? "") ?? m.description;
-      if (newDesc === null) return;
-      const newAmtStr = prompt("Importo (usa punto per i decimali):", String(Math.abs(m.amount))) ?? String(Math.abs(m.amount));
-      const newAmt = Number(String(newAmtStr).replace(",", "."));
-      if (!Number.isFinite(newAmt) || newAmt<=0) return alert("Importo non valido.");
-      // mantieni segno originario
-      const finalAmount = (m.amount>=0) ? Math.abs(newAmt) : -Math.abs(newAmt);
-      await DB.editMovement(m.id, { itemName: newItem.trim(), description: newDesc.trim(), amount: finalAmount });
+      // prompt ROBUSTI
+      const itemRaw = prompt("Nome oggetto:", m.itemName ?? "");
+      if (itemRaw === null) return;
+      const descRaw = prompt("Descrizione:", m.description ?? "");
+      if (descRaw === null) return;
+      const amtRaw  = prompt("Importo (usa punto per i decimali):", String(Math.abs(Number(m.amount)||0)));
+      if (amtRaw === null) return;
+
+      const item = String(itemRaw).trim();
+      const desc = String(descRaw).trim();
+      const amt  = Number(String(amtRaw).replace(",", "."));
+      if (!item) return alert("Nome oggetto obbligatorio.");
+      if (!desc) return alert("Descrizione obbligatoria.");
+      if (!Number.isFinite(amt) || amt<=0) return alert("Importo non valido.");
+
+      const finalAmount = (m.amount>=0) ? Math.abs(amt) : -Math.abs(amt);
+      await DB.editMovement(m.id, { itemName: item, description: desc, amount: finalAmount });
       await refreshMovements(); if (state.currentPage==="page-analisi") renderAnalytics();
     });
+
     const btnArch = mkBtn(m.archived?"Ripristina":"Archivia", m.archived?"undo":"archive", async()=>{
       if(m.archived) await DB.unarchiveMovement(m.id); else await DB.archiveMovement(m.id);
       await refreshMovements(); if (state.currentPage==="page-analisi") renderAnalytics();
     });
+
     const btnDel = mkBtn("Elimina","trash", async()=>{
       if (!confirm("Eliminare definitivamente questa transazione?")) return;
       await DB.deleteMovement(m.id);
@@ -278,11 +296,10 @@ async function refreshSpools(){
 
     const mkBtn = (title,icon,handler)=>{ const b=document.createElement("button"); b.className="icon-btn icon-only"; b.title=title; b.appendChild($ico(icon)); b.addEventListener("click",handler); return b; };
 
-    const add = mkBtn("Aggiungi grammi","+",async()=>{ const g=Number(prompt("Grammi da aggiungere:","100")); if(Number.isFinite(g)&&g>0){ await DB.addSpoolStock(s.id,g); refreshSpools(); }});
-    const edit = mkBtn("Modifica","edit",async()=>{ const name=prompt("Nome/descrizione:",s.name)??s.name; const price=Number(prompt("Prezzo €/kg:",String(s.price_per_kg)))||s.price_per_kg; await DB.editSpool(s.id,{name:name.trim(),price_per_kg:price}); refreshSpools(); });
+    const edit = mkBtn("Modifica","edit",async()=>{ const name=prompt("Nome/descrizione:",s.name)??s.name; const price=Number(prompt("Prezzo €/kg:",String(s.price_per_kg)))||s.price_per_kg; await DB.editSpool(s.id,{name:String(name||"").trim(),price_per_kg:price}); refreshSpools(); });
     const tog  = mkBtn(s.archived?"Ripristina":"Archivia", s.archived?"undo":"archive", async()=>{ if(s.archived){ await DB.editSpool(s.id,{archived:false}); } else { await DB.archiveSpool(s.id);} refreshSpools(); });
 
-    right.append(add,edit,tog); li.append(left,right); list.appendChild(li);
+    right.append(edit,tog); li.append(left,right); list.appendChild(li);
   }
 }
 
@@ -334,24 +351,34 @@ async function refreshTodos(){
     left.innerHTML = `<div><strong>${t.description}</strong></div><div class="muted">Priorità: ${prTxt}</div>`;
 
     const right = document.createElement("div"); right.className="item-actions";
-
     const mkBtn = (title,icon,handler)=>{ const b=document.createElement("button"); b.className="icon-btn icon-only"; b.title=title; b.setAttribute("aria-label",title); b.appendChild($ico(icon)); b.addEventListener("click",handler); return b; };
 
     const done = mkBtn(t.done?"Segna come incompleta":"Completa", "save", async()=>{ await DB.toggleTask(t.id, !t.done); refreshTodos(); });
+
     const edit = mkBtn("Modifica","edit", async ()=>{
-      const newDesc = prompt("Modifica descrizione:", t.description);
-      if (newDesc === null) return;
-      let newPrio = prompt('Priorità (very-high, high, normal, low):', t.priority) || t.priority;
-      newPrio = ["very-high","high","normal","low"].includes(newPrio) ? newPrio : t.priority;
-      await DB.editTask(t.id, { description: newDesc.trim(), priority: newPrio });
+      const newDescRaw = prompt("Modifica descrizione:", t.description ?? "");
+      if (newDescRaw === null) return;
+      const newDesc = String(newDescRaw).trim();
+      let newPrioRaw = prompt('Priorità (very-high, high, normal, low):', t.priority ?? "normal");
+      if (newPrioRaw === null) return;
+      let newPrio = String(newPrioRaw).trim();
+      if (!["very-high","high","normal","low"].includes(newPrio)) newPrio = t.priority;
+      await DB.editTask(t.id, { description: newDesc || t.description, priority: newPrio });
       refreshTodos();
     });
+
     const arch = mkBtn(t.archived?"Ripristina":"Archivia", t.archived?"undo":"archive", async()=>{ if(t.archived) await DB.unarchiveTask(t.id); else await DB.archiveTask(t.id); refreshTodos(); });
     const del  = mkBtn("Elimina","trash", async()=>{ if (confirm("Eliminare questa attività?")){ await DB.deleteTask(t.id); refreshTodos(); } });
 
     right.append(done, edit, arch, del);
     li.append(left,right); list.appendChild(li);
   }
+}
+
+async function archiveDoneTodos(){
+  const items = await DB.listTasks(state.username,true);
+  for (const t of items){ if (t.done && !t.archived) await DB.archiveTask(t.id); }
+  refreshTodos();
 }
 
 /* ===== Analisi ===== */
@@ -458,4 +485,14 @@ async function renderAnalytics(){
      <div>Costo materiale: ${f(matCost)}</div>
      <div>Utile stimato: ${f(profit)}</div>`;
   document.getElementById("trend").textContent = trendTxt;
+}
+
+/* ===== Recovery opzionale ===== */
+async function recoverUnarchiveAll(){
+  const [movs, tasks] = await Promise.all([
+    DB.listMovements(state.username,"all",true),
+    DB.listTasks(state.username,true)
+  ]);
+  for (const m of movs){ if (m.archived) await DB.unarchiveMovement(m.id); }
+  for (const t of tasks){ if (t.archived) await DB.unarchiveTask(t.id); }
 }

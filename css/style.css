@@ -55,6 +55,9 @@ input[type="date"]{width:100%}
 .icon-btn.icon-only{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;padding:0}
 .icon-btn svg{width:18px;height:18px}
 
+/* Checkbox To-Do confortevole e a tema */
+.item-actions input[type="checkbox"]{ width:18px;height:18px; accent-color: var(--accent); cursor:pointer; }
+
 /* Paginate */
 .page{display:none}
 .page.active{display:block}

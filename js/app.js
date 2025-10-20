@@ -1,4 +1,4 @@
-// MarketSpace v1.3.10 (fix definitivo: no auto-archiviazione, boot solido, grafico live)
+// MarketSpace v1.3.11 (default no-archived, checkbox To-Do, archive icon distinto)
 const state = {
   version: "0.0.0",
   username: "default",
@@ -33,7 +33,7 @@ async function loadConfig(){
   }catch{}
 }
 
-/* ====== FUNZIONI CHE DEVONO ESISTERE PRIMA DEL BIND ====== */
+/* ====== FUNZIONI USATE NEL BIND ====== */
 async function archiveDoneTodos(){
   const items = await DB.listTasks(state.username,true);
   for (const t of items){ if (t.done && !t.archived) await DB.archiveTask(t.id); }
@@ -47,7 +47,8 @@ function $ico(name){
   svg.setAttribute('fill','none'); svg.setAttribute('stroke','currentColor'); svg.setAttribute('stroke-width','2'); svg.setAttribute('stroke-linecap','round'); svg.setAttribute('stroke-linejoin','round');
   const p=(d)=>{ const path=document.createElementNS(ns,'path'); path.setAttribute('d',d); return path; };
   if(name==='edit'){ svg.append(p('M12 20h9')); svg.append(p('M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z')); }
-  else if(name==='archive'){ svg.append(p('M3 7h18')); svg.append(p('M5 7v12h14V7')); svg.append(p('M9 3h6v4H9z')); }
+  // Nuova icona ARCHIVE: scatola + freccia in giù (molto diversa dal cestino)
+  else if(name==='archive'){ svg.append(p('M21 16V8l-9-5-9 5v8l9 5 9-5z')); svg.append(p('M12 8v6')); svg.append(p('M9 11l3 3 3-3')); }
   else if(name==='undo'){ svg.append(p('M9 14l-4-4 4-4')); svg.append(p('M5 10h8a6 6 0 1 1 0 12H9')); }
   else if(name==='trash'){ svg.append(p('M3 6h18')); svg.append(p('M8 6V4h8v2')); svg.append(p('M19 6l-1 14H6L5 6')); }
   else if(name==='save'){ svg.append(p('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z')); svg.append(p('M17 21V13H7v8')); svg.append(p('M7 3v5h8')); }
@@ -75,8 +76,11 @@ async function boot(){
 
     bindEvents();
 
-    // Nessuna auto-archiviazione: nessuna funzione viene chiamata qui.
-    // Opzione manuale di recovery: aggiungi ?unarchive=1 all’URL SOLO se vuoi disarchiviare tutto una volta.
+    // DEFAULT: non mostrare archiviati all'avvio
+    const mck = document.getElementById("mov-show-arch"); if (mck) mck.checked = false;
+    const tck = document.getElementById("todo-show-arch"); if (tck) tck.checked = false;
+
+    // Recovery manuale opzionale: ?unarchive=1
     if (new URL(location.href).searchParams.get("unarchive") === "1"){
       await recoverUnarchiveAll();
     }
@@ -128,7 +132,7 @@ function bindEvents(){
     on($("todo-add-btn"),"click", (e)=>{ e.preventDefault(); onAddTodo(e); });
   }
   on($("todo-show-arch"),"change", refreshTodos);
-  on($("btn-archive-done"),"click", archiveDoneTodos); // esiste e viene solo agganciata (non chiamata)
+  on($("btn-archive-done"),"click", archiveDoneTodos);
 
   // Analisi
   on($("range"),"change", onRangeChange);
@@ -204,7 +208,7 @@ async function onAddMovement(ev){
   state.submitMode = "add";
 
   await refreshMovements();
-  if (state.currentPage==="page-analisi") renderAnalytics(); // grafico live
+  if (state.currentPage==="page-analisi") renderAnalytics();
 }
 
 async function refreshMovements(){
@@ -353,7 +357,15 @@ async function refreshTodos(){
     const right = document.createElement("div"); right.className="item-actions";
     const mkBtn = (title,icon,handler)=>{ const b=document.createElement("button"); b.className="icon-btn icon-only"; b.title=title; b.setAttribute("aria-label",title); b.appendChild($ico(icon)); b.addEventListener("click",handler); return b; };
 
-    const done = mkBtn(t.done?"Segna come incompleta":"Completa", "save", async()=>{ await DB.toggleTask(t.id, !t.done); refreshTodos(); });
+    // ✓ checkbox semplice per completare / riaprire
+    const chk = document.createElement("input");
+    chk.type = "checkbox";
+    chk.checked = !!t.done;
+    chk.title = t.done ? "Segna come incompleta" : "Completa";
+    chk.addEventListener("change", async ()=>{
+      await DB.toggleTask(t.id, chk.checked);
+      refreshTodos();
+    });
 
     const edit = mkBtn("Modifica","edit", async ()=>{
       const newDescRaw = prompt("Modifica descrizione:", t.description ?? "");
@@ -370,7 +382,7 @@ async function refreshTodos(){
     const arch = mkBtn(t.archived?"Ripristina":"Archivia", t.archived?"undo":"archive", async()=>{ if(t.archived) await DB.unarchiveTask(t.id); else await DB.archiveTask(t.id); refreshTodos(); });
     const del  = mkBtn("Elimina","trash", async()=>{ if (confirm("Eliminare questa attività?")){ await DB.deleteTask(t.id); refreshTodos(); } });
 
-    right.append(done, edit, arch, del);
+    right.append(chk, edit, arch, del);
     li.append(left,right); list.appendChild(li);
   }
 }

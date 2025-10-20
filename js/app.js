@@ -1,4 +1,4 @@
-// MarketSpace v1.3.11 (default no-archived, checkbox To-Do, archive icon distinto)
+// MarketSpace v1.3.12 (persistenza "Mostra archiviati" + icona Archivia box 2D con freccia)
 const state = {
   version: "0.0.0",
   username: "default",
@@ -47,8 +47,12 @@ function $ico(name){
   svg.setAttribute('fill','none'); svg.setAttribute('stroke','currentColor'); svg.setAttribute('stroke-width','2'); svg.setAttribute('stroke-linecap','round'); svg.setAttribute('stroke-linejoin','round');
   const p=(d)=>{ const path=document.createElementNS(ns,'path'); path.setAttribute('d',d); return path; };
   if(name==='edit'){ svg.append(p('M12 20h9')); svg.append(p('M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z')); }
-  // Nuova icona ARCHIVE: scatola + freccia in giù (molto diversa dal cestino)
-  else if(name==='archive'){ svg.append(p('M21 16V8l-9-5-9 5v8l9 5 9-5z')); svg.append(p('M12 8v6')); svg.append(p('M9 11l3 3 3-3')); }
+  // ARCHIVE: scatola 2D (rettangolo) con freccia verso il basso all’interno
+  else if(name==='archive'){ 
+    svg.append(p('M4 5h16v14H4z'));      // box 2D
+    svg.append(p('M12 8v7'));            // stelo freccia
+    svg.append(p('M9 12l3 3 3-3'));      // punta freccia
+  }
   else if(name==='undo'){ svg.append(p('M9 14l-4-4 4-4')); svg.append(p('M5 10h8a6 6 0 1 1 0 12H9')); }
   else if(name==='trash'){ svg.append(p('M3 6h18')); svg.append(p('M8 6V4h8v2')); svg.append(p('M19 6l-1 14H6L5 6')); }
   else if(name==='save'){ svg.append(p('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z')); svg.append(p('M17 21V13H7v8')); svg.append(p('M7 3v5h8')); }
@@ -76,9 +80,13 @@ async function boot(){
 
     bindEvents();
 
-    // DEFAULT: non mostrare archiviati all'avvio
-    const mck = document.getElementById("mov-show-arch"); if (mck) mck.checked = false;
-    const tck = document.getElementById("todo-show-arch"); if (tck) tck.checked = false;
+    // Stato persistente delle spunte "Mostra archiviati"
+    const mck = document.getElementById("mov-show-arch");
+    const tck = document.getElementById("todo-show-arch");
+    const movPref  = await DB.getMeta("mov_show_arch");
+    const todoPref = await DB.getMeta("todo_show_arch");
+    if (mck)  mck.checked  = !!movPref;   // di default false se nulla
+    if (tck)  tck.checked  = !!todoPref;  // di default false se nulla
 
     // Recovery manuale opzionale: ?unarchive=1
     if (new URL(location.href).searchParams.get("unarchive") === "1"){
@@ -115,7 +123,7 @@ function bindEvents(){
   // Movimenti
   on($("mov-form"),"submit", onAddMovement);
   on($("mov-filter"),"change", refreshMovements);
-  on($("mov-show-arch"),"change", refreshMovements);
+  on($("mov-show-arch"),"change", e=>{ DB.setMeta("mov_show_arch", e.target.checked); refreshMovements(); });
   on($("mov-spool"),"change", onSpoolChange);
   on($("btn-export"),"click", onExport);
   on($("file-import"),"change", e=>onImport(e.target.files[0]));
@@ -131,7 +139,7 @@ function bindEvents(){
     on(todoForm, "submit", onAddTodo);
     on($("todo-add-btn"),"click", (e)=>{ e.preventDefault(); onAddTodo(e); });
   }
-  on($("todo-show-arch"),"change", refreshTodos);
+  on($("todo-show-arch"),"change", e=>{ DB.setMeta("todo_show_arch", e.target.checked); refreshTodos(); });
   on($("btn-archive-done"),"click", archiveDoneTodos);
 
   // Analisi

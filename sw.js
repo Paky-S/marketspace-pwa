@@ -1,5 +1,5 @@
-// SW cache bump — forza l’aggiornamento ed evita versioni in cache vecchie
-const CACHE_NAME = 'marketspace-v1.3.10';
+// SW cache bump — v1.3.12 (forza aggiornamento file)
+const CACHE_NAME = 'marketspace-v1.3.12';
 
 self.addEventListener('install', (e)=>{
   self.skipWaiting();

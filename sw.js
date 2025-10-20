@@ -1,10 +1,9 @@
-// SW con cache bust per evitare versioni vecchie
-const CACHE_NAME = 'marketspace-v1.3.8';
+// SW cache bump — forza l’aggiornamento ed evita versioni in cache vecchie
+const CACHE_NAME = 'marketspace-v1.3.10';
 
 self.addEventListener('install', (e)=>{
   self.skipWaiting();
 });
-
 self.addEventListener('activate', (e)=>{
   e.waitUntil((async()=>{
     const keys = await caches.keys();
@@ -12,14 +11,13 @@ self.addEventListener('activate', (e)=>{
     await self.clients.claim();
   })());
 });
-
 self.addEventListener('fetch', (event)=>{
   const req = event.request; if (req.method!=='GET') return;
   event.respondWith((async()=>{
     const cache = await caches.open(CACHE_NAME);
     const cached = await cache.match(req);
     if (cached){
-      event.waitUntil(fetch(req).then(res=>cache.put(req,res.clone())));
+      event.waitUntil(fetch(req).then(res=>cache.put(req,res.clone())).catch(()=>{}));
       return cached;
     }
     try{

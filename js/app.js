@@ -1,11 +1,10 @@
-// MarketSpace v1.4.0 (fix archiveDoneTodos, anti-archiviazione di default, unarchive auto, grafico live)
+// MarketSpace v1.3.10 (fix definitivo: no auto-archiviazione, boot solido, grafico live)
 const state = {
   version: "0.0.0",
   username: "default",
   currentPage: "page-movimenti",
   palette: "blue",
-  submitMode: "add", // "add" | "sub"
-  disableArchive: true // mostra sempre tutto + blocca azioni di archivio
+  submitMode: "add" // "add" | "sub"
 };
 
 const PALETTES = {
@@ -34,18 +33,28 @@ async function loadConfig(){
   }catch{}
 }
 
-/* ---------- FUNZIONI CHE VENGONO USATE NEI BIND (dichiarate PRIMA) ---------- */
+/* ====== FUNZIONI CHE DEVONO ESISTERE PRIMA DEL BIND ====== */
 async function archiveDoneTodos(){
-  if (state.disableArchive){
-    alert("Archivio disattivato: impostazioni → disabilita l'opzione per usare l'archiviazione.");
-    return;
-  }
   const items = await DB.listTasks(state.username,true);
   for (const t of items){ if (t.done && !t.archived) await DB.archiveTask(t.id); }
   refreshTodos();
 }
-/* --------------------------------------------------------------------------- */
 
+/* ===== Helpers icone inline (stile Lucide semplificate) ===== */
+function $ico(name){
+  const ns='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(ns,'svg'); svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('width','18'); svg.setAttribute('height','18');
+  svg.setAttribute('fill','none'); svg.setAttribute('stroke','currentColor'); svg.setAttribute('stroke-width','2'); svg.setAttribute('stroke-linecap','round'); svg.setAttribute('stroke-linejoin','round');
+  const p=(d)=>{ const path=document.createElementNS(ns,'path'); path.setAttribute('d',d); return path; };
+  if(name==='edit'){ svg.append(p('M12 20h9')); svg.append(p('M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z')); }
+  else if(name==='archive'){ svg.append(p('M3 7h18')); svg.append(p('M5 7v12h14V7')); svg.append(p('M9 3h6v4H9z')); }
+  else if(name==='undo'){ svg.append(p('M9 14l-4-4 4-4')); svg.append(p('M5 10h8a6 6 0 1 1 0 12H9')); }
+  else if(name==='trash'){ svg.append(p('M3 6h18')); svg.append(p('M8 6V4h8v2')); svg.append(p('M19 6l-1 14H6L5 6')); }
+  else if(name==='save'){ svg.append(p('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z')); svg.append(p('M17 21V13H7v8')); svg.append(p('M7 3v5h8')); }
+  return svg;
+}
+
+/* ===== BOOT ===== */
 async function boot(){
   const hideSplash = ()=>{
     const s = document.getElementById("splash");
@@ -61,29 +70,22 @@ async function boot(){
     }
     try{ await DB.open(); }catch(e){ console.error("IndexedDB:", e); alert("Errore apertura database locale. L'app funziona ma non salverà i dati finché non consenti l'archiviazione."); }
 
-    // carica preferenze
     const pal = await DB.getMeta("palette"); applyPalette(pal||"blue");
-    const da = await DB.getMeta("disableArchive");
-    state.disableArchive = (da === undefined) ? true : !!da;
-
     const date = document.getElementById("mov-date"); if (date) date.valueAsDate = new Date();
+
     bindEvents();
 
-    // UI iniziale coerente con preferenze
-    document.getElementById("set-disable-archive").checked = state.disableArchive;
-    document.getElementById("mov-show-arch").checked = true;
-    document.getElementById("todo-show-arch").checked = true;
-
-    // Se l'archiviazione è disattivata → ripristina tutto (una tantum all'avvio)
-    if (state.disableArchive){
-      await unarchiveEverything();
+    // Nessuna auto-archiviazione: nessuna funzione viene chiamata qui.
+    // Opzione manuale di recovery: aggiungi ?unarchive=1 all’URL SOLO se vuoi disarchiviare tutto una volta.
+    if (new URL(location.href).searchParams.get("unarchive") === "1"){
+      await recoverUnarchiveAll();
     }
 
     await refreshMovements();
     await refreshTodos();
   } catch(e){
     console.error("Boot error:", e);
-    alert("Errore in avvio. Ricarica (Ctrl+F5). Controlla la Console per dettagli.");
+    alert("Errore in avvio. Fai un hard refresh (Ctrl+F5). Vedi Console per dettagli.");
   } finally {
     hideSplash();
   }
@@ -92,7 +94,7 @@ document.addEventListener("DOMContentLoaded", boot);
 
 function bindEvents(){
   const $ = (id)=>document.getElementById(id);
-  const on = (el,ev,fn)=>{ if(el) el.addEventListener(ev,fn); };
+  const on = (el,ev,fn)=>{ if(el && typeof fn === "function") el.addEventListener(ev,fn); };
 
   document.querySelectorAll(".tab").forEach(btn=>{
     btn.addEventListener("click",()=>switchPage(btn.dataset.target));
@@ -102,23 +104,9 @@ function bindEvents(){
   const dlg = $("dlg-settings");
   on($("btn-settings"),"click",()=>{
     $("set-palette").value = state.palette || "blue";
-    $("set-disable-archive").checked = !!state.disableArchive;
     dlg.showModal();
   });
   on($("set-palette"),"change",(e)=>applyPalette(e.target.value));
-  on($("set-disable-archive"),"change", async (e)=>{
-    state.disableArchive = e.target.checked;
-    await DB.setMeta("disableArchive", state.disableArchive);
-    if (state.disableArchive){
-      await unarchiveEverything();
-      // forza show-archiviati a true
-      const msa = $("mov-show-arch"), tsa=$("todo-show-arch");
-      if (msa) msa.checked = true;
-      if (tsa) tsa.checked = true;
-    }
-    await refreshMovements(); await refreshTodos();
-    if (state.currentPage==="page-analisi") renderAnalytics();
-  });
 
   // Movimenti
   on($("mov-form"),"submit", onAddMovement);
@@ -140,8 +128,7 @@ function bindEvents(){
     on($("todo-add-btn"),"click", (e)=>{ e.preventDefault(); onAddTodo(e); });
   }
   on($("todo-show-arch"),"change", refreshTodos);
-  // ora esiste ed è definita prima del bind
-  on($("btn-archive-done"),"click", archiveDoneTodos);
+  on($("btn-archive-done"),"click", archiveDoneTodos); // esiste e viene solo agganciata (non chiamata)
 
   // Analisi
   on($("range"),"change", onRangeChange);
@@ -160,20 +147,6 @@ function switchPage(id){
   if (id==="page-magazzino") refreshSpools();
 }
 
-/* ===== Helpers icone inline (stile Lucide semplificate) ===== */
-function $ico(name){
-  const ns='http://www.w3.org/2000/svg';
-  const svg=document.createElementNS(ns,'svg'); svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('width','18'); svg.setAttribute('height','18');
-  svg.setAttribute('fill','none'); svg.setAttribute('stroke','currentColor'); svg.setAttribute('stroke-width','2'); svg.setAttribute('stroke-linecap','round'); svg.setAttribute('stroke-linejoin','round');
-  const p=(d)=>{ const path=document.createElementNS(ns,'path'); path.setAttribute('d',d); return path; };
-  if(name==='edit'){ svg.append(p('M12 20h9')); svg.append(p('M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z')); }
-  else if(name==='archive'){ svg.append(p('M3 7h18')); svg.append(p('M5 7v12h14V7')); svg.append(p('M9 3h6v4H9z')); }
-  else if(name==='undo'){ svg.append(p('M9 14l-4-4 4-4')); svg.append(p('M5 10h8a6 6 0 1 1 0 12H9')); }
-  else if(name==='trash'){ svg.append(p('M3 6h18')); svg.append(p('M8 6V4h8v2')); svg.append(p('M19 6l-1 14H6L5 6')); }
-  else if(name==='save'){ svg.append(p('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z')); svg.append(p('M17 21V13H7v8')); svg.append(p('M7 3v5h8')); }
-  return svg;
-}
-
 /* ===== Movimenti ===== */
 function onSpoolChange(){
   const sel = document.getElementById("mov-spool");
@@ -184,17 +157,14 @@ function onSpoolChange(){
 async function onAddMovement(ev){
   ev.preventDefault();
 
-  // 1) Importo (solo positivo)
   let amount = Number(String(document.getElementById("mov-amount").value).replace(",","."));
   if (!Number.isFinite(amount) || amount<=0) return alert("Inserisci un importo valido (> 0).");
 
-  // 2) Modalità
   const isAdd = state.submitMode === "add";
   amount = isAdd ? Math.abs(amount) : -Math.abs(amount);
 
-  // 3) Campi base
-  const itemName = document.getElementById("mov-item").value.trim();
-  const desc = document.getElementById("mov-desc").value.trim();
+  const itemName = String(document.getElementById("mov-item").value||"").trim();
+  const desc = String(document.getElementById("mov-desc").value||"").trim();
   if (!itemName) return alert("Inserisci il Nome Oggetto.");
   if (!desc) return alert("Inserisci la Descrizione.");
 
@@ -202,7 +172,6 @@ async function onAddMovement(ev){
   const d = dInp && dInp.value ? new Date(dInp.value) : new Date();
   const iso = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
 
-  // 4) Filamento/grammi (solo per Aggiungi)
   let spoolId = document.getElementById("mov-spool")?.value || null;
   let gramsUsed = 0, materialCost = 0;
 
@@ -218,7 +187,6 @@ async function onAddMovement(ev){
     spoolId=null; gramsUsed=0; materialCost=0;
   }
 
-  // 5) Salva
   await DB.addMovement({
     username:state.username,
     amount, description:desc, itemName,
@@ -226,7 +194,6 @@ async function onAddMovement(ev){
     spoolId, gramsUsed, materialCost
   });
 
-  // 6) Reset form
   document.getElementById("mov-amount").value = "";
   document.getElementById("mov-item").value = "";
   document.getElementById("mov-desc").value = "";
@@ -241,10 +208,8 @@ async function onAddMovement(ev){
 }
 
 async function refreshMovements(){
-  const filter   = document.getElementById("mov-filter").value;
-  const uiShow   = document.getElementById("mov-show-arch").checked;
-  const showArch = state.disableArchive ? true : uiShow;
-
+  const filter = document.getElementById("mov-filter").value;
+  const showArch = document.getElementById("mov-show-arch").checked;
   const list = document.getElementById("mov-list"); list.innerHTML="";
   const rows = await DB.listMovements(state.username, filter, showArch);
   let saldo=0; for (const m of rows) if (!m.archived) saldo += m.amount;
@@ -267,14 +232,7 @@ async function refreshMovements(){
     const mkBtn = (title,icon,handler)=>{
       const b=document.createElement("button");
       b.className="icon-btn icon-only"; b.title=title; b.setAttribute("aria-label",title);
-      b.appendChild($ico(icon));
-      b.addEventListener("click",(ev)=>{
-        if (state.disableArchive && (icon==='archive' || icon==='undo')){
-          ev.preventDefault(); alert("Archivio disattivato: impostazioni → disabilita l'opzione per usare l'archiviazione."); return;
-        }
-        handler();
-      });
-      return b;
+      b.appendChild($ico(icon)); b.addEventListener("click",handler); return b;
     };
 
     const btnEdit = mkBtn("Modifica","edit", async()=>{
@@ -312,7 +270,6 @@ async function refreshMovements(){
     li.append(left, right); list.appendChild(li);
   }
 
-  // aggiorna elenco bobine nel select
   const sel = document.getElementById("mov-spool");
   const keep = sel.value;
   const spools = await DB.listSpools();
@@ -337,10 +294,7 @@ async function refreshSpools(){
     left.innerHTML = `<div><strong>${s.name}</strong> — € ${(s.price_per_kg).toFixed(2)}/kg</div><div class="muted">Disponibili: ${s.grams_available} g</div>`;
     const right = document.createElement("div"); right.className="item-actions";
 
-    const mkBtn = (title,icon,handler)=>{ const b=document.createElement("button"); b.className="icon-btn icon-only"; b.title=title; b.appendChild($ico(icon)); b.addEventListener("click",(ev)=>{
-      if (state.disableArchive && (icon==='archive'||icon==='undo')){ ev.preventDefault(); alert("Archivio disattivato."); return; }
-      handler();
-    }); return b; };
+    const mkBtn = (title,icon,handler)=>{ const b=document.createElement("button"); b.className="icon-btn icon-only"; b.title=title; b.appendChild($ico(icon)); b.addEventListener("click",handler); return b; };
 
     const edit = mkBtn("Modifica","edit",async()=>{ const name=prompt("Nome/descrizione:",s.name)??s.name; const price=Number(prompt("Prezzo €/kg:",String(s.price_per_kg)))||s.price_per_kg; await DB.editSpool(s.id,{name:String(name||"").trim(),price_per_kg:price}); refreshSpools(); });
     const tog  = mkBtn(s.archived?"Ripristina":"Archivia", s.archived?"undo":"archive", async()=>{ if(s.archived){ await DB.editSpool(s.id,{archived:false}); } else { await DB.archiveSpool(s.id);} refreshSpools(); });
@@ -373,8 +327,8 @@ async function onAddTodo(ev){
   if (_addingTodo) return;
   _addingTodo = true;
   try{
-    const desc = document.getElementById("todo-desc").value.trim();
-    const prio = document.getElementById("todo-priority").value;
+    const desc = String(document.getElementById("todo-desc").value||"").trim();
+    const prio = document.getElementById("todo-priority").value || "normal";
     if (!desc){ _addingTodo=false; return; }
     await DB.addTask({username:state.username, description:desc, done:false, priority:prio, archived:false});
     document.getElementById("todo-desc").value = "";
@@ -383,9 +337,7 @@ async function onAddTodo(ev){
 }
 
 async function refreshTodos(){
-  const uiShow   = document.getElementById("todo-show-arch").checked;
-  const showArch = state.disableArchive ? true : uiShow;
-
+  const showArch = document.getElementById("todo-show-arch").checked;
   const list = document.getElementById("todo-list"); list.innerHTML="";
   const items = await DB.listTasks(state.username, showArch);
   for (const t of items){
@@ -395,14 +347,11 @@ async function refreshTodos(){
     if (prClass) li.classList.add(prClass);
 
     const left = document.createElement("div");
-    const prTxt = { "very-high":"Molto alta", "high":"Alta", "normal":"Normale", "low":"Bassa" }[t.priority] || t.priority;
-    left.innerHTML = `<div><strong>${t.description}</strong></div><div class="muted">Priorità: ${prTxt}</div>`;
+    const prTxt = { "very-high":"Molto alta", "high":"Alta", "normal":"Normale", "low":"Bassa" }[t.priority] || t.priority || "Normale";
+    left.innerHTML = `<div><strong>${t.description||"(senza testo)"}</strong></div><div class="muted">Priorità: ${prTxt}</div>`;
 
     const right = document.createElement("div"); right.className="item-actions";
-    const mkBtn = (title,icon,handler)=>{ const b=document.createElement("button"); b.className="icon-btn icon-only"; b.title=title; b.setAttribute("aria-label",title); b.appendChild($ico(icon)); b.addEventListener("click",(ev)=>{
-      if (state.disableArchive && (icon==='archive'||icon==='undo')){ ev.preventDefault(); alert("Archivio disattivato."); return; }
-      handler();
-    }); return b; };
+    const mkBtn = (title,icon,handler)=>{ const b=document.createElement("button"); b.className="icon-btn icon-only"; b.title=title; b.setAttribute("aria-label",title); b.appendChild($ico(icon)); b.addEventListener("click",handler); return b; };
 
     const done = mkBtn(t.done?"Segna come incompleta":"Completa", "save", async()=>{ await DB.toggleTask(t.id, !t.done); refreshTodos(); });
 
@@ -413,7 +362,7 @@ async function refreshTodos(){
       let newPrioRaw = prompt('Priorità (very-high, high, normal, low):', t.priority ?? "normal");
       if (newPrioRaw === null) return;
       let newPrio = String(newPrioRaw).trim();
-      if (!["very-high","high","normal","low"].includes(newPrio)) newPrio = t.priority;
+      if (!["very-high","high","normal","low"].includes(newPrio)) newPrio = t.priority || "normal";
       await DB.editTask(t.id, { description: newDesc || t.description, priority: newPrio });
       refreshTodos();
     });
@@ -452,7 +401,7 @@ function onRangeChange(){
 
 async function renderAnalytics(){
   const range = document.getElementById("range").value;
-  const rows = await DB.listMovements(state.username,"all",true); // analytics usa sempre tutto
+  const rows = await DB.listMovements(state.username,"all",true);
 
   let start = new Date(0), end = new Date();
   const now = new Date();
@@ -528,8 +477,8 @@ async function renderAnalytics(){
   document.getElementById("trend").textContent = trendTxt;
 }
 
-/* ===== Utility: disarchivia tutto se l’archivio è disattivato ===== */
-async function unarchiveEverything(){
+/* ===== Recovery opzionale ===== */
+async function recoverUnarchiveAll(){
   const [movs, tasks] = await Promise.all([
     DB.listMovements(state.username,"all",true),
     DB.listTasks(state.username,true)

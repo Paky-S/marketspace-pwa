@@ -1,5 +1,5 @@
-// SW cache bump — v1.3.12 (forza aggiornamento file)
-const CACHE_NAME = 'marketspace-v1.3.12';
+// SW cache bump — v1.4.1 (forza aggiornamento file)
+const CACHE_NAME = 'marketspace-v1.4.1';
 
 self.addEventListener('install', (e)=>{
   self.skipWaiting();

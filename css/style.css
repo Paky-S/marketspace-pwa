@@ -151,3 +151,19 @@ input,select{font-size:16px}
   .list li{grid-template-columns:1fr auto; gap:6px}
   .icon-btn.icon-only{width:34px;height:34px}
 }
+
+/* === Aggiunte/ritocchi per il PIE === */
+.pie-legend{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:8px; margin-top:10px;
+}
+.pie-legend-item{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:8px; padding:6px 8px; border:1px solid var(--border); border-radius:10px; background:var(--bg);
+}
+.pie-legend-item .swatch{
+  width:14px; height:14px; border-radius:3px; display:inline-block; border:1px solid color-mix(in srgb,#000 10%, transparent);
+}
+.pie-legend-item .label{ color:var(--fg); flex:1; }
+.pie-legend-item .val{ color:var(--muted); font-variant-numeric: tabular-nums; }

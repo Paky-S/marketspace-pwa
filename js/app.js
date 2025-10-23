@@ -1,4 +1,4 @@
-// MarketSpace v1.4.1 (mobile polish: bottom bar fissa, date field omogeneo, distanze; rimozione opzione superflua)
+// MarketSpace v1.4.1 (fix: rimozione opzione superflua, badge versione singola 'v', pie chart Entrate vs Uscite)
 const state = {
   version: "0.0.0",
   username: "default",
@@ -28,8 +28,9 @@ async function loadConfig(){
   try{
     const res = await fetch("config.json?ts="+Date.now());
     const cfg = await res.json();
-    document.getElementById("app-version").textContent = "v"+cfg.version;
-    document.getElementById("version-badge").textContent = "v"+cfg.version;
+    // Mostra solo la versione nuda; la 'v' è nell'HTML
+    document.getElementById("app-version").textContent = cfg.version;
+    document.getElementById("version-badge").textContent = cfg.version;
   }catch{}
 }
 
@@ -47,7 +48,7 @@ function $ico(name){
   svg.setAttribute('fill','none'); svg.setAttribute('stroke','currentColor'); svg.setAttribute('stroke-width','2'); svg.setAttribute('stroke-linecap','round'); svg.setAttribute('stroke-linejoin','round');
   const p=(d)=>{ const path=document.createElementNS(ns,'path'); path.setAttribute('d',d); return path; };
   if(name==='edit'){ svg.append(p('M12 20h9')); svg.append(p('M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z')); }
-  // ARCHIVE: scatola 2D con freccia interna
+  // Archivia: scatola 2D con freccia verso il basso
   else if(name==='archive'){ svg.append(p('M4 5h16v14H4z')); svg.append(p('M12 8v7')); svg.append(p('M9 12l3 3 3-3')); }
   else if(name==='undo'){ svg.append(p('M9 14l-4-4 4-4')); svg.append(p('M5 10h8a6 6 0 1 1 0 12H9')); }
   else if(name==='trash'){ svg.append(p('M3 6h18')); svg.append(p('M8 6V4h8v2')); svg.append(p('M19 6l-1 14H6L5 6')); }
@@ -75,10 +76,6 @@ async function boot(){
     const date = document.getElementById("mov-date"); if (date) date.valueAsDate = new Date();
 
     bindEvents();
-
-    // RIMUOVI eventuale opzione "Mostra sempre tutto (disattiva archivio)" se presente in HTML
-    document.querySelectorAll('[data-setting="always-show"], #opt-always-show, #opt-show-all, #opt-disable-archive')
-      .forEach(n=>{ const lab = n.closest('label') || n; try{ lab.remove(); }catch{} });
 
     // Stato persistente delle spunte "Mostra archiviati"
     const mck = document.getElementById("mov-show-arch");
@@ -448,6 +445,7 @@ async function renderAnalytics(){
                    .filter(r=> r.d >= start && r.d <= new Date(end.getTime()+86400000-1))
                    .sort((a,b)=>a.d-b.d);
 
+  // Bucket giornaliero
   const byDay = new Map();
   for (const r of data){
     const key = toUTC0(r.d).toISOString();
@@ -455,6 +453,7 @@ async function renderAnalytics(){
   }
   const days = Array.from(byDay.keys()).sort().map(k=>({ x:new Date(k), val: byDay.get(k) }));
 
+  // Cumulato
   let cum = 0;
   let points = [];
   for (const d of days){
@@ -463,6 +462,7 @@ async function renderAnalytics(){
   }
   if (!points.length) points = [{ x:new Date(), y:0 }];
 
+  // Downsample
   const MAX_POINTS = 2000;
   if (points.length > MAX_POINTS){
     const step = Math.ceil(points.length / MAX_POINTS);
@@ -474,14 +474,18 @@ async function renderAnalytics(){
     points = slim;
   }
 
+  // Lineare
   drawLineChart(document.getElementById("chart"), points, { step:false });
 
+  // KPI + trend
   const sales = data.filter(r=>r.amount>0);
+  const outgo = data.filter(r=>r.amount<0);
   const sum = a=>a.reduce((x,y)=>x+y,0);
   const totalSales = sum(sales.map(s=>s.amount));
+  const totalOut   = Math.abs(sum(outgo.map(o=>o.amount))); // valore assoluto per il pie
   const matCost = sum(sales.map(s=>s.materialCost||0));
   const profit = totalSales - matCost;
-  const tx = data.length, pos = sales.length, neg = data.filter(r=>r.amount<0).length;
+  const tx = data.length, pos = sales.length, neg = outgo.length;
   const f = n=>new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(n);
 
   let slope=0; if (points.length>=2){
@@ -497,6 +501,15 @@ async function renderAnalytics(){
      <div>Costo materiale: ${f(matCost)}</div>
      <div>Utile stimato: ${f(profit)}</div>`;
   document.getElementById("trend").textContent = trendTxt;
+
+  // === NUOVO PIE: Entrate vs Uscite (percentuali) ===
+  const pieCanvas = document.getElementById("pie");
+  const legendEl  = document.getElementById("pie-legend");
+  const pieData = [
+    { label: "Entrate", value: totalSales },
+    { label: "Uscite",  value: totalOut }
+  ];
+  drawPieChart(pieCanvas, pieData, { legendEl });
 }
 
 /* ===== Recovery opzionale ===== */

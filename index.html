@@ -24,6 +24,7 @@
   <div id="app" hidden>
     <header class="app-header">
       <h1 id="page-title">Movimenti</h1>
+      <!-- Visualizza correttamente la versione: una sola “v” -->
       <div class="version-badge">v<span id="version-badge">1.4.1</span></div>
       <button id="btn-settings" class="icon-btn" title="Impostazioni" aria-label="Impostazioni">
         <!-- tre pallini verticali -->
@@ -144,7 +145,7 @@
       </section>
 
       <!-- Pagina ANALISI -->
-      <section id="page-analisi" class="page">
+      <section id="page-analisi" class "page">
         <div class="card">
           <div class="toolbar" style="flex-wrap:wrap; gap:8px">
             <select id="range">
@@ -176,7 +177,7 @@
       </section>
     </main>
 
-    <!-- Bottom bar -->
+    <!-- Bottom bar con icone fisse -->
     <nav class="bottom-bar">
       <button class="tab active" data-target="page-movimenti" title="Movimenti">
         <i class="icon icon-mov"></i><span>Movimenti</span>
@@ -192,7 +193,7 @@
       </button>
     </nav>
 
-    <!-- Impostazioni -->
+    <!-- Dialog impostazioni (palette) -->
     <dialog id="dlg-settings">
       <div class="card" style="min-width:min(520px,92vw); margin:0">
         <h3 style="margin:0 0 10px">Impostazioni</h3>

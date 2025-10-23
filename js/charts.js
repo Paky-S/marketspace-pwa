@@ -44,15 +44,15 @@ function drawLineChart(canvas, points, opts={}){
   }
   ctx.stroke();
 
-  // asse X (solo ticks principali)
+  // asse X (ticks principali)
   ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted');
-  ctx.font = "12px system-ui, -apple-system, Segoe UI";
+  ctx.font = "12px system-ui,-apple-system,Segoe UI";
   ctx.textAlign = "center"; ctx.textBaseline = "top";
   const tickCount = Math.min(6, points.length);
   for (let i=0;i<tickCount;i++){
     const idx = Math.round(i*(points.length-1)/(tickCount-1));
     const d = new Date(points[idx].x);
-    const label = d.toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit' });
+    const label = d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'});
     const x = x2px(+d);
     ctx.fillText(label, x, h - m.b + 6);
   }
@@ -72,48 +72,54 @@ function drawLineChart(canvas, points, opts={}){
 function drawPieChart(canvas, data, opts={}){
   if (!canvas) return;
   const ctx = _dprCanvas(canvas);
-  const w = canvas.clientWidth, h = canvas.clientHeight;
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
   ctx.clearRect(0,0,w,h);
 
-  const total = data.reduce((a,b)=>a + (b.value||0), 0);
+  const total = data.reduce((sum, d) => sum + d.value, 0);
   if (total <= 0){
     ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted');
-    ctx.font = "14px system-ui, -apple-system, Segoe UI";
+    ctx.font = "14px system-ui,-apple-system,Segoe UI";
     ctx.textAlign="center"; ctx.textBaseline="middle";
     ctx.fillText("Nessun dato", w/2, h/2);
     if (opts.legendEl) opts.legendEl.innerHTML = "";
     return;
   }
 
+  // palette: prima fetta colore accento, seconda fetta colore danger, poi altre tinte
   const colors = [
     getComputedStyle(document.documentElement).getPropertyValue('--accent'),
-    getComputedStyle(document.documentElement).getPropertyValue('--ok'),
-    "#a78bfa","#f59e0b","#ef4444","#10b981","#3b82f6"
-  ];
-  const cx = w/2, cy = h/2, r = Math.min(w,h)*0.36;
+    getComputedStyle(document.documentElement).getPropertyValue('--danger'),
+    '#a78bfa','#f59e0b','#3b82f6','#10b981','#fde047'
+  ].map(c => c.trim());
+
+  // centro e raggio: 40% del min(w,h) per evitare tagli
+  const cx = w/2, cy = h/2;
+  const r  = Math.min(w, h) * 0.40;
   let start = -Math.PI/2;
 
   data.forEach((d,i)=>{
-    const val = d.value || 0;
-    const angle = (val/total)*Math.PI*2;
-    const end = start + angle;
+    const val = d.value;
+    const angle = (val/total) * 2 * Math.PI;
+    const end   = start + angle;
 
     // fetta
     ctx.beginPath();
     ctx.moveTo(cx,cy);
     ctx.arc(cx,cy,r,start,end,false);
     ctx.closePath();
-    ctx.fillStyle = colors[i % colors.length].trim() || '#999';
+    ctx.fillStyle = colors[i % colors.length] || '#999';
     ctx.fill();
 
-    // percentuale
+    // percentuale al centro della fetta
     const mid = (start + end)/2;
-    const tx = cx + Math.cos(mid) * r * 0.66;
-    const ty = cy + Math.sin(mid) * r * 0.66;
+    const tx = cx + Math.cos(mid) * r * 0.6;
+    const ty = cy + Math.sin(mid) * r * 0.6;
     const perc = Math.round((val/total)*100);
     ctx.fillStyle = "#fff";
-    ctx.font = "12px system-ui, -apple-system, Segoe UI";
-    ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.font = "bold 12px system-ui,-apple-system,Segoe UI";
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
     ctx.fillText(perc+"%", tx, ty);
 
     start = end;
@@ -122,14 +128,15 @@ function drawPieChart(canvas, data, opts={}){
   // legenda
   if (opts.legendEl){
     const legend = data.map((d,i)=>{
-      const perc = ((d.value/total)*100).toFixed(1).replace('.', ',');
-      const color = colors[i % colors.length];
+      const pct = ((d.value/total)*100).toFixed(1).replace('.',',');
+      const col = colors[i % colors.length];
       return `
         <div class="pie-legend-item">
-          <span class="swatch" style="background:${color};"></span>
+          <span class="swatch" style="background:${col};"></span>
           <span class="label">${d.label}</span>
-          <span class="val">${perc}%</span>
-        </div>`;
+          <span class="val">${pct}%</span>
+        </div>
+      `;
     }).join("");
     opts.legendEl.innerHTML = legend;
   }

@@ -1,143 +1,126 @@
-// charts.js — funzioni grafiche canvas vanilla
+// Canvas line chart con assi, tacche, tooltip; sizing robusto per evitare "ingrandimenti" casuali
+function drawLineChart(canvas, points, opts = {}) {
+  // 1) Misura CSS reale dal contenitore, non dal canvas
+  const parent = canvas.parentElement || canvas;
+  const rect = parent.getBoundingClientRect();
+  // fallback sensati se la pagina fosse ancora nascosta
+  const Wcss = Math.max(320, Math.floor(rect.width || canvas.clientWidth || 600));
+  const Hcss = Math.max(200, Math.floor(rect.height || canvas.clientHeight || 280));
 
-function _dprCanvas(canvas){
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width  = Math.max(1, Math.round(rect.width * dpr));
-  canvas.height = Math.max(1, Math.round(rect.height * dpr));
-  const ctx = canvas.getContext('2d');
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  return ctx;
-}
+  // 2) Imposta esplicitamente la dimensione CSS (stabile) del canvas
+  canvas.style.width = Wcss + "px";
+  canvas.style.height = Hcss + "px";
 
-/** Line Chart: points = [{x:Date, y:Number}], opts.step=false */
-function drawLineChart(canvas, points, opts={}){
-  if (!canvas) return;
-  const ctx = _dprCanvas(canvas);
-  const w = canvas.clientWidth, h = canvas.clientHeight;
+  // 3) Imposta il buffer interno in base al DPR (limitato per evitare esagerazioni)
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  const W = Wcss * DPR, H = Hcss * DPR;
+  canvas.width = W;
+  canvas.height = H;
 
-  // margini
-  const m = { l: 36, r: 10, t: 10, b: 24 };
-  const iw = Math.max(1, w - m.l - m.r);
-  const ih = Math.max(1, h - m.t - m.b);
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, W, H);
 
-  // scale
-  const xs = points.map(p=>+p.x);
-  const ys = points.map(p=>p.y);
-  const xMin = Math.min(...xs), xMax = Math.max(...xs);
-  const yMin = Math.min(0, Math.min(...ys)), yMax = Math.max(...ys, 0);
-  const x2px = (x)=> m.l + (iw * ( (x - xMin) / Math.max(1, xMax - xMin) ));
-  const y2px = (y)=> m.t + ih - (ih * ( (y - yMin) / Math.max(1, yMax - yMin) ));
+  const padL = 48 * DPR, padR = 16 * DPR, padT = 18 * DPR, padB = 36 * DPR;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
 
-  // sfondo
-  ctx.clearRect(0,0,w,h);
-  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg');
-  ctx.fillRect(0,0,w,h);
+  const css = getComputedStyle(document.documentElement);
+  const colGrid = "rgba(127,127,127,.25)";
+  const colLine = (css.getPropertyValue("--accent").trim() || "#0ea5e9");
+  const colText = (css.getPropertyValue("--fg").trim() || "#0b1215");
 
-  // griglia orizzontale
-  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border');
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (let i=0;i<=4;i++){
-    const y = m.t + (ih * i/4);
-    ctx.moveTo(m.l, y); ctx.lineTo(w - m.r, y);
-  }
-  ctx.stroke();
+  ctx.font = `${12 * DPR}px system-ui`;
+  ctx.fillStyle = colText;
 
-  // asse X (ticks principali)
-  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted');
-  ctx.font = "12px system-ui,-apple-system,Segoe UI";
-  ctx.textAlign = "center"; ctx.textBaseline = "top";
-  const tickCount = Math.min(6, points.length);
-  for (let i=0;i<tickCount;i++){
-    const idx = Math.round(i*(points.length-1)/(tickCount-1));
-    const d = new Date(points[idx].x);
-    const label = d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'});
-    const x = x2px(+d);
-    ctx.fillText(label, x, h - m.b + 6);
-  }
-
-  // linea
-  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent');
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  points.forEach((p,i)=>{
-    const x=x2px(+p.x), y=y2px(p.y);
-    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-  });
-  ctx.stroke();
-}
-
-/** Pie chart con percentuali e legenda */
-function drawPieChart(canvas, data, opts={}){
-  if (!canvas) return;
-  const ctx = _dprCanvas(canvas);
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
-  ctx.clearRect(0,0,w,h);
-
-  const total = data.reduce((sum, d) => sum + d.value, 0);
-  if (total <= 0){
-    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted');
-    ctx.font = "14px system-ui,-apple-system,Segoe UI";
-    ctx.textAlign="center"; ctx.textBaseline="middle";
-    ctx.fillText("Nessun dato", w/2, h/2);
-    if (opts.legendEl) opts.legendEl.innerHTML = "";
+  if (!points || !points.length) {
+    ctx.fillText("Nessun dato", padL, padT + 14 * DPR);
     return;
   }
 
-  // palette: prima fetta colore accento, seconda fetta colore danger, poi altre tinte
-  const colors = [
-    getComputedStyle(document.documentElement).getPropertyValue('--accent'),
-    getComputedStyle(document.documentElement).getPropertyValue('--danger'),
-    '#a78bfa','#f59e0b','#3b82f6','#10b981','#fde047'
-  ].map(c => c.trim());
+  const xs = points.map(p => p.x.getTime()), ys = points.map(p => p.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const yPad = (maxY - minY) * 0.08 || 1;
 
-  // centro e raggio: 40% del min(w,h) per evitare tagli
-  const cx = w/2, cy = h/2;
-  const r  = Math.min(w, h) * 0.40;
-  let start = -Math.PI/2;
+  const x2px = x => padL + ((x - minX) / Math.max(1, (maxX - minX))) * plotW;
+  const y2px = y => H - padB - ((y - (minY - yPad)) / Math.max(1, (maxY - (minY - yPad)))) * plotH;
 
-  data.forEach((d,i)=>{
-    const val = d.value;
-    const angle = (val/total) * 2 * Math.PI;
-    const end   = start + angle;
+  // Griglia Y
+  ctx.strokeStyle = colGrid; ctx.lineWidth = 1 * DPR;
+  const yt = 5;
+  for (let i = 0; i <= yt; i++) {
+    const t = i / yt;
+    const yv = (minY - yPad) + t * (maxY - (minY - yPad));
+    const y = y2px(yv);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+    ctx.fillText(new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(yv), 6 * DPR, y - 2 * DPR);
+  }
+  // Griglia X
+  const days = Math.max(1, Math.round((maxX - minX) / 86400000));
+  const xt = Math.min(6, days + 1);
+  for (let i = 0; i <= xt; i++) {
+    const xv = minX + ((maxX - minX) * (i / xt));
+    const x = x2px(xv);
+    ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, H - padB); ctx.stroke();
+    const d = new Date(xv);
+    const label = (days <= 31) ? d.getDate() : (d.getMonth() + 1) + "/" + String(d.getFullYear()).slice(-2);
+    const tw = ctx.measureText(label).width;
+    ctx.fillText(label, x - tw / 2, H - 12 * DPR);
+  }
+  // Assi
+  ctx.beginPath();
+  ctx.moveTo(padL, H - padB); ctx.lineTo(W - padR, H - padB);
+  ctx.moveTo(padL, padT);     ctx.lineTo(padL, H - padB);
+  ctx.stroke();
 
-    // fetta
-    ctx.beginPath();
-    ctx.moveTo(cx,cy);
-    ctx.arc(cx,cy,r,start,end,false);
-    ctx.closePath();
-    ctx.fillStyle = colors[i % colors.length] || '#999';
-    ctx.fill();
+  // Linea (continua o step)
+  ctx.strokeStyle = colLine; ctx.lineWidth = 2 * DPR; ctx.beginPath();
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i]; const x = x2px(p.x.getTime()), y = y2px(p.y);
+    if (i === 0) ctx.moveTo(x, y);
+    else if (opts.step) {
+      const prev = points[i - 1];
+      const xPrev = x2px(prev.x.getTime()), yPrev = y2px(prev.y);
+      ctx.lineTo(x, yPrev); ctx.lineTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+  ctx.stroke();
 
-    // percentuale al centro della fetta
-    const mid = (start + end)/2;
-    const tx = cx + Math.cos(mid) * r * 0.6;
-    const ty = cy + Math.sin(mid) * r * 0.6;
-    const perc = Math.round((val/total)*100);
-    ctx.fillStyle = "#fff";
-    ctx.font = "bold 12px system-ui,-apple-system,Segoe UI";
-    ctx.textAlign="center";
-    ctx.textBaseline="middle";
-    ctx.fillText(perc+"%", tx, ty);
-
-    start = end;
+  // Punti
+  ctx.fillStyle = colLine; const R = 3 * DPR;
+  points.forEach(p => {
+    const x = x2px(p.x.getTime()), y = y2px(p.y);
+    ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.fill();
   });
 
-  // legenda
-  if (opts.legendEl){
-    const legend = data.map((d,i)=>{
-      const pct = ((d.value/total)*100).toFixed(1).replace('.',',');
-      const col = colors[i % colors.length];
-      return `
-        <div class="pie-legend-item">
-          <span class="swatch" style="background:${col};"></span>
-          <span class="label">${d.label}</span>
-          <span class="val">${pct}%</span>
-        </div>
-      `;
-    }).join("");
-    opts.legendEl.innerHTML = legend;
+  // Tooltip (evita duplicati)
+  if (!canvas._tip) {
+    const tip = document.createElement("div");
+    tip.className = "tooltip"; tip.style.display = "none";
+    canvas._tip = tip; parent.appendChild(tip);
   }
+  canvas.onmousemove = ev => {
+    const r = canvas.getBoundingClientRect();
+    const mx = (ev.clientX - r.left) * (window.devicePixelRatio || 1);
+    const my = (ev.clientY - r.top) * (window.devicePixelRatio || 1);
+    let best = null, bd = 1e9;
+    points.forEach(p => {
+      const x = x2px(p.x.getTime()), y = y2px(p.y);
+      const d = Math.hypot(mx - x, my - y);
+      if (d < bd) { bd = d; best = { x, y, p }; }
+    });
+    if (best && bd < 20 * (window.devicePixelRatio || 1)) {
+      const d = best.p.x;
+      const lx = new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "2-digit" }).format(d);
+      const ly = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(best.p.y);
+      canvas._tip.textContent = lx + " · " + ly;
+      canvas._tip.style.left = (best.x / (window.devicePixelRatio || 1) + 8) + "px";
+      canvas._tip.style.top  = (best.y / (window.devicePixelRatio || 1) - 28) + "px";
+      canvas._tip.style.display = "block";
+    } else {
+      canvas._tip.style.display = "none";
+    }
+  };
+  canvas.onmouseleave = () => { if (canvas._tip) canvas._tip.style.display = "none"; };
 }

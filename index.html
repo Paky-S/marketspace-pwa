@@ -1,128 +1,116 @@
 <!doctype html>
 <html lang="it">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <title>MarketSpace</title>
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="assets/icons/pwa-192.png">
-  <link rel="apple-touch-icon" href="assets/icons/pwa-192.png">
-  <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-  <!-- Splash -->
-  <div id="splash">
-    <div class="splash-card">
-      <div class="app-title">MarketSpace</div>
-      <div class="progress-wrap"><div id="progress-bar"></div></div>
-      <div id="progress-label">0%</div>
-      <div class="version">v<span id="app-version">1.4.1</span></div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1215" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <link rel="manifest" href="manifest.webmanifest">
+    <title>MarketSpace</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- Splash / Loader -->
+    <div id="splash">
+      <div class="splash-card">
+        <div class="app-title">MarketSpace</div>
+        <div class="progress-wrap"><div id="progress-bar"></div></div>
+        <div id="progress-label">0%</div>
+        <div class="version" id="app-version">v?</div>
+      </div>
     </div>
-  </div>
 
-  <!-- App -->
-  <div id="app" hidden>
-    <header class="app-header">
-      <h1 id="page-title">Movimenti</h1>
-      <!-- Visualizza correttamente la versione: una sola “v” -->
-      <div class="version-badge">v<span id="version-badge">1.4.1</span></div>
-      <button id="btn-settings" class="icon-btn" title="Impostazioni" aria-label="Impostazioni">
-        <!-- tre pallini verticali -->
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="5" r="1"></circle>
-          <circle cx="12" cy="12" r="1"></circle>
-          <circle cx="12" cy="19" r="1"></circle>
-        </svg>
-      </button>
-    </header>
+    <!-- App -->
+    <div id="app" hidden>
+      <header class="app-header">
+        <h1 id="page-title">Movimenti</h1>
+        <div class="header-actions">
+          <button id="btn-settings" class="icon-btn" title="Impostazioni">⚙️</button>
+        </div>
+        <div class="version-badge" id="version-badge"></div>
+      </header>
 
-    <main>
-      <!-- Pagina MOVIMENTI -->
-      <section id="page-movimenti" class="page active">
-        <div class="card">
-          <form id="mov-form" class="form" autocomplete="off">
+      <main id="pages">
+        <!-- MOVIMENTI -->
+        <section id="page-movimenti" class="page active" aria-label="Movimenti">
+          <!-- PRIMO RIQUADRO -->
+          <form id="mov-form" class="card form">
             <div class="row">
-              <label>Importo</label>
-              <input id="mov-amount" type="number" inputmode="decimal" step="0.01" min="0.01" placeholder="Es. 12.50" required>
+              <label for="mov-amount">Importo (solo positivo)</label>
+              <input id="mov-amount" inputmode="decimal" type="number" step="0.01" min="0.01" placeholder="es. 120.50" required>
             </div>
+
             <div class="row">
-              <label>Nome oggetto</label>
-              <input id="mov-item" type="text" placeholder="Es. Ricambio/Servizio" required>
+              <label for="mov-item">Nome Oggetto</label>
+              <input id="mov-item" type="text" maxlength="120" placeholder="es. Supporto telefono" required>
             </div>
+
             <div class="row">
-              <label>Descrizione</label>
-              <input id="mov-desc" type="text" placeholder="Dettagli della transazione" required>
+              <label for="mov-desc">Descrizione</label>
+              <input id="mov-desc" type="text" maxlength="160" placeholder="es. Vendita in fiera / Spesa materiali" required>
             </div>
+
             <div class="row">
-              <label>Data di transazione</label>
+              <label for="mov-date">Data di transazione</label>
               <input id="mov-date" type="date" required>
             </div>
 
-            <!-- SOTTO-RIQUADRO FILAMENTO -->
+            <!-- SOTTO RIQUADRO (DISTACCATO/OPZIONALE) -->
             <div class="subgroup">
-              <div class="subgroup-title">Filamento (opzionale)</div>
+              <div class="subgroup-title">Opzionale — dati filamento</div>
               <div class="row">
-                <label>Seleziona bobina</label>
-                <select id="mov-spool">
-                  <option value="">— nessuno —</option>
-                </select>
+                <label for="mov-spool">Filamento (opzionale)</label>
+                <select id="mov-spool"><option value="">— nessuno —</option></select>
               </div>
               <div class="row" id="row-grams" hidden>
-                <label>Grammi usati</label>
-                <input id="mov-grams" type="number" inputmode="numeric" step="1" min="1" placeholder="Es. 120">
+                <label for="mov-grams">Grammi usati (solo per vendite)</label>
+                <input id="mov-grams" inputmode="numeric" type="number" step="1" min="0" placeholder="es. 95">
               </div>
             </div>
 
             <div class="row actions">
-              <button id="btn-add" type="submit" class="btn primary">Aggiungi</button>
-              <button id="btn-sub" type="button" class="btn">Sottrai</button>
-
-              <label class="btn file">
-                <input id="file-import" type="file" accept="application/json" hidden>
-                Importa
-              </label>
-              <button id="btn-export" type="button" class="btn">Esporta</button>
+              <button type="submit" class="btn primary" id="btn-add">Aggiungi</button>
+              <button type="button" class="btn" id="btn-sub">Sottrai</button>
+              <button type="button" id="btn-export" class="btn">Esporta</button>
+              <label class="btn file">Importa <input id="file-import" type="file" accept=".json" hidden></label>
             </div>
           </form>
-        </div>
 
-        <div class="card">
-          <div class="toolbar">
-            <select id="mov-filter">
-              <option value="all">Modalità: Tutti</option>
-              <option value="in">Solo Entrate</option>
-              <option value="out">Solo Uscite</option>
-            </select>
-            <label class="chk"><input id="mov-show-arch" type="checkbox"> Mostra archiviati</label>
+          <!-- SECONDO RIQUADRO -->
+          <div class="card">
+            <div class="toolbar">
+              <select id="mov-filter" aria-label="Modalità elenco">
+                <option value="all">Tutti</option>
+                <option value="in">Entrate</option>
+                <option value="out">Uscite</option>
+              </select>
+              <label class="chk"><input type="checkbox" id="mov-show-arch"> Mostra archiviati</label>
+              <div class="saldo">Saldo: <strong id="saldo">0,00 €</strong></div>
+            </div>
+            <ul id="mov-list" class="list"></ul>
           </div>
-          <div class="saldo">Saldo totale: <strong id="saldo">€ 0,00</strong></div>
-          <ul id="mov-list" class="list"></ul>
-        </div>
-      </section>
+        </section>
 
-      <!-- Pagina MAGAZZINO -->
-      <section id="page-magazzino" class="page">
-        <div class="card">
-          <div class="row actions">
-            <button id="btn-add-spool" class="btn primary" type="button">Aggiungi bobina</button>
+        <!-- MAGAZZINO -->
+        <section id="page-magazzino" class="page" aria-label="Magazzino">
+          <div class="card">
+            <div class="toolbar">
+              <strong>Magazzino Filamenti</strong>
+              <button class="btn" id="btn-add-spool">Aggiungi bobina</button>
+            </div>
+            <ul id="spool-list" class="list"></ul>
           </div>
-        </div>
-        <div class="card">
-          <ul id="spool-list" class="list"></ul>
-        </div>
-      </section>
+        </section>
 
-      <!-- Pagina TO-DO -->
-      <section id="page-todo" class="page">
-        <div class="card">
-          <form id="todo-form" class="form" autocomplete="off">
+        <!-- TO-DO -->
+        <section id="page-todo" class="page" aria-label="To-Do">
+          <form id="todo-form" class="card form">
             <div class="row">
-              <label>Nuova attività</label>
-              <input id="todo-desc" type="text" placeholder="Es. chiamare cliente">
+              <label for="todo-desc">Attività</label>
+              <input id="todo-desc" type="text" maxlength="140" placeholder="es. Chiamare cliente..." required>
             </div>
             <div class="row">
-              <label>Priorità</label>
+              <label for="todo-priority">Priorità</label>
               <select id="todo-priority">
                 <option value="very-high">Molto alta</option>
                 <option value="high">Alta</option>
@@ -131,74 +119,71 @@
               </select>
             </div>
             <div class="row actions">
-              <button id="todo-add-btn" class="btn primary" type="submit">Aggiungi</button>
-              <button id="btn-archive-done" class="btn" type="button">Archivia completate</button>
+              <button type="submit" class="btn primary" id="todo-add-btn">Aggiungi</button>
+              <button type="button" id="btn-archive-done" class="btn">Archivia completate</button>
             </div>
           </form>
-        </div>
-        <div class="card">
-          <div class="toolbar">
-            <label class="chk"><input id="todo-show-arch" type="checkbox"> Mostra archiviati</label>
-          </div>
-          <ul id="todo-list" class="list"></ul>
-        </div>
-      </section>
 
-      <!-- Pagina ANALISI -->
-      <section id="page-analisi" class "page">
-        <div class="card">
-          <div class="toolbar" style="flex-wrap:wrap; gap:8px">
-            <select id="range">
-              <option value="all">Tutto</option>
-              <option value="year">Anno corrente</option>
-              <option value="month">Mese corrente</option>
-              <option value="week">Settimana corrente</option>
-              <option value="custom">Intervallo personalizzato…</option>
-            </select>
-            <input id="date-from" type="date" style="display:none">
-            <span id="date-sep" style="display:none">→</span>
-            <input id="date-to" type="date" style="display:none">
-            <button id="btn-apply-range" class="btn" style="display:none">Applica</button>
+          <div class="card">
+            <div class="toolbar">
+              <label class="chk"><input type="checkbox" id="todo-show-arch"> Mostra archiviati</label>
+            </div>
+            <ul id="todo-list" class="list"></ul>
           </div>
-          <div class="chart-wrap">
-            <canvas id="chart"></canvas>
+        </section>
+
+        <!-- ANALISI -->
+        <section id="page-analisi" class="page" aria-label="Analisi">
+          <div class="card">
+            <div class="toolbar">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <select id="range">
+                  <option value="all">Tutto</option>
+                  <option value="year">Anno</option>
+                  <option value="month">Mese</option>
+                  <option value="week">Settimana</option>
+                  <option value="custom">Filtro (da…a…)</option>
+                </select>
+                <input id="date-from" type="date" style="display:none;">
+                <span id="date-sep" class="muted" style="display:none;">→</span>
+                <input id="date-to" type="date" style="display:none;">
+                <button id="btn-apply-range" class="btn" style="display:none;">Applica</button>
+              </div>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="chart" aria-label="Saldo cumulato"></canvas>
+            </div>
+            <div class="stats" id="stats"></div>
+            <div class="trend" id="trend"></div>
           </div>
-          <div id="stats" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px"></div>
-          <div id="trend" class="muted" style="margin-top:6px"></div>
-        </div>
+        </section>
+      </main>
 
-        <!-- NUOVO: Pie chart Entrate vs Uscite -->
-        <div class="card">
-          <div class="chart-wrap" style="height:260px">
-            <canvas id="pie"></canvas>
-          </div>
-          <div id="pie-legend" class="pie-legend"></div>
-        </div>
-      </section>
-    </main>
+      <!-- Bottom Bar (ordine ripristinato: Movimenti, To-Do, Analisi, Magazzino) -->
+      <nav class="bottom-bar" role="tablist">
+        <button class="tab active" data-target="page-movimenti" aria-label="Movimenti">
+          <span class="icon icon-mov"></span><span>Movimenti</span>
+        </button>
+        <button class="tab" data-target="page-todo" aria-label="To-Do">
+          <span class="icon icon-todo"></span><span>To-Do</span>
+        </button>
+        <button class="tab" data-target="page-analisi" aria-label="Analisi">
+          <span class="icon icon-ana"></span><span>Analisi</span>
+        </button>
+        <button class="tab" data-target="page-magazzino" aria-label="Magazzino">
+          <span class="icon icon-warehouse"></span><span>Magazzino</span>
+        </button>
+      </nav>
+    </div>
 
-    <!-- Bottom bar con icone fisse -->
-    <nav class="bottom-bar">
-      <button class="tab active" data-target="page-movimenti" title="Movimenti">
-        <i class="icon icon-mov"></i><span>Movimenti</span>
-      </button>
-      <button class="tab" data-target="page-todo" title="To-Do">
-        <i class="icon icon-todo"></i><span>To-Do</span>
-      </button>
-      <button class="tab" data-target="page-analisi" title="Analisi">
-        <i class="icon icon-ana"></i><span>Analisi</span>
-      </button>
-      <button class="tab" data-target="page-magazzino" title="Magazzino">
-        <i class="icon icon-warehouse"></i><span>Magazzino</span>
-      </button>
-    </nav>
-
-    <!-- Dialog impostazioni (palette) -->
+    <!-- Settings Modal -->
     <dialog id="dlg-settings">
-      <div class="card" style="min-width:min(520px,92vw); margin:0">
-        <h3 style="margin:0 0 10px">Impostazioni</h3>
+      <form method="dialog" class="card" style="max-width:520px;">
+        <h2 style="margin:0 0 8px;">Impostazioni</h2>
+        <p class="muted" style="margin:0 0 12px;">Preferenze dell’app</p>
+
         <div class="row">
-          <label>Palette colori</label>
+          <label for="set-palette">Palette colori</label>
           <select id="set-palette">
             <option value="blue">Blu</option>
             <option value="red">Rosso</option>
@@ -206,23 +191,16 @@
             <option value="purple">Viola</option>
           </select>
         </div>
-        <div class="row actions" style="justify-content:flex-end;margin:0">
-          <button onclick="this.closest('dialog').close()" class="btn primary" type="button">Chiudi</button>
-        </div>
-      </div>
-    </dialog>
-  </div>
 
-  <script src="js/db.js"></script>
-  <script src="js/charts.js"></script>
-  <script src="js/app.js"></script>
-  <script>
-    // Splash finto caricamento
-    (function(){
-      const bar = document.getElementById('progress-bar');
-      const lab = document.getElementById('progress-label');
-      let p=0; const t=setInterval(()=>{ p=Math.min(100,p+10); bar.style.width=p+'%'; lab.textContent=p+'%'; if(p>=100) clearInterval(t); },100);
-    })();
-  </script>
-</body>
+        <div class="row actions" style="justify-content:flex-end;">
+          <button value="cancel" class="btn">Chiudi</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="js/db.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/adapters/remoteAdapter.js"></script>
+    <script src="js/app.js"></script>
+  </body>
 </html>

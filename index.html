@@ -156,22 +156,30 @@
             <div class="stats" id="stats"></div>
             <div class="trend" id="trend"></div>
           </div>
+
+          <!-- (se usi anche il pie, qui puoi lasciare il relativo markup) -->
+          <div class="card">
+            <div class="chart-wrap" style="height:260px">
+              <canvas id="pie"></canvas>
+            </div>
+            <div id="pie-legend" class="pie-legend"></div>
+          </div>
         </section>
       </main>
 
-      <!-- Bottom Bar (ordine ripristinato: Movimenti, To-Do, Analisi, Magazzino) -->
+      <!-- Bottom Bar — ORDINE RICHIESTO: Movimenti, Magazzino, To-Do, Analisi -->
       <nav class="bottom-bar" role="tablist">
         <button class="tab active" data-target="page-movimenti" aria-label="Movimenti">
           <span class="icon icon-mov"></span><span>Movimenti</span>
+        </button>
+        <button class="tab" data-target="page-magazzino" aria-label="Magazzino">
+          <span class="icon icon-warehouse"></span><span>Magazzino</span>
         </button>
         <button class="tab" data-target="page-todo" aria-label="To-Do">
           <span class="icon icon-todo"></span><span>To-Do</span>
         </button>
         <button class="tab" data-target="page-analisi" aria-label="Analisi">
           <span class="icon icon-ana"></span><span>Analisi</span>
-        </button>
-        <button class="tab" data-target="page-magazzino" aria-label="Magazzino">
-          <span class="icon icon-warehouse"></span><span>Magazzino</span>
         </button>
       </nav>
     </div>

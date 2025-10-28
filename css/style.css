@@ -55,19 +55,24 @@ input[type="date"]{width:100%}
 .page.active{display:block}
 
 /* Bottom bar */
-.bottom-bar{position:fixed;left:0;right:0;bottom:0;padding:8px 8px calc(8px + env(safe-area-inset-bottom));
-  background:var(--card);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.bottom-bar{
+  position:fixed;left:0;right:0;bottom:0;
+  padding:8px 8px calc(8px + env(safe-area-inset-bottom));
+  background:var(--card);border-top:1px solid var(--border);
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+  height:64px; z-index:1000; /* resta sopra la tastiera su mobile */
+}
 .tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px;border-radius:12px;border:1px solid transparent;cursor:pointer}
 .tab.active{border-color:var(--accent-weak);background:color-mix(in srgb,var(--accent-weak) 20%,transparent)}
 .tab span{font-size:.85rem}
 
-/* Icone (mask) — FIX: usa background-color + currentColor */
+/* Icone (mask) — background con currentColor per tema chiaro/scuro */
 .icon{
   width:24px;height:24px;display:inline-block;
   color:var(--fg);
-  background-color: currentColor;
+  background: currentColor;            /* <— importante */
   -webkit-mask-repeat:no-repeat;-webkit-mask-position:center;-webkit-mask-size:contain;
-  mask-repeat:no-repeat;mask-position:center;mask-size:contain
+  mask-repeat:no-repeat;mask-position:center;mask-size:contain;
 }
 .icon-mov{-webkit-mask-image:url("../assets/icons/movimenti.svg");mask-image:url("../assets/icons/movimenti.svg")}
 .icon-todo{-webkit-mask-image:url("../assets/icons/todo.svg");mask-image:url("../assets/icons/todo.svg")}

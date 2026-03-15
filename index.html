@@ -2,11 +2,12 @@
 <html lang="it">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0b1215" media="(prefers-color-scheme: dark)">
-    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#F2F2F7">
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
     <link rel="manifest" href="manifest.webmanifest">
     <title>MarketSpace</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
@@ -33,60 +34,146 @@
       <main id="pages">
         <!-- MOVIMENTI -->
         <section id="page-movimenti" class="page active" aria-label="Movimenti">
-          <!-- PRIMO RIQUADRO -->
-          <form id="mov-form" class="card form">
-            <div class="row">
-              <label for="mov-amount">Importo (solo positivo)</label>
-              <input id="mov-amount" inputmode="decimal" type="number" step="0.01" min="0.01" placeholder="es. 120.50" required>
+          <!-- NUOVO FORM A TAB -->
+          <div class="card form-card">
+            <!-- Tab selector -->
+            <div class="form-tabs">
+              <button type="button" class="form-tab active" data-tab="sale">💰 Vendita</button>
+              <button type="button" class="form-tab" data-tab="expense">💸 Spesa</button>
+              <button type="button" class="form-tab" data-tab="purchase">📦 Acquisto</button>
             </div>
-
-            <div class="row">
-              <label for="mov-item">Nome Oggetto</label>
-              <input id="mov-item" type="text" maxlength="120" placeholder="es. Supporto telefono" required>
-            </div>
-
-            <div class="row">
-              <label for="mov-desc">Descrizione</label>
-              <input id="mov-desc" type="text" maxlength="160" placeholder="es. Vendita in fiera / Spesa materiali" required>
-            </div>
-
-            <div class="row">
-              <label for="mov-date">Data di transazione</label>
-              <input id="mov-date" type="date" required>
-            </div>
-
-            <!-- SOTTO RIQUADRO (DISTACCATO/OPZIONALE) -->
-            <div class="subgroup">
-              <div class="subgroup-title">Opzionale — dati filamento</div>
-              <div class="row">
-                <label for="mov-spool">Filamento (opzionale)</label>
-                <select id="mov-spool"><option value="">— nessuno —</option></select>
+            
+            <!-- TAB VENDITA -->
+            <form id="form-sale" class="mov-form active">
+              <div class="form-section">
+                <h3 class="form-section-title">Dati Vendita</h3>
+                
+                <div class="row">
+                  <label for="sale-customer">Cliente</label>
+                  <input id="sale-customer" type="text" placeholder="Nome cliente (opzionale)">
+                </div>
+                
+                <div class="row">
+                  <label for="sale-item">Oggetto *</label>
+                  <input id="sale-item" type="text" maxlength="120" placeholder="es. Supporto telefono" required>
+                </div>
+                
+                <div class="row">
+                  <label for="sale-desc">Descrizione</label>
+                  <input id="sale-desc" type="text" maxlength="160" placeholder="es. Vendita in fiera">
+                </div>
+                
+                <div class="row">
+                  <label for="sale-amount">Importo ricevuto (€) *</label>
+                  <input id="sale-amount" inputmode="decimal" type="text" step="0.01" min="0.01" placeholder="es. 120.50" required>
+                </div>
+                
+                <div class="row">
+                  <label for="sale-date">Data</label>
+                  <input id="sale-date" type="date" required>
+                </div>
               </div>
-              <div class="row" id="row-grams" hidden>
-                <label for="mov-grams">Grammi usati (solo per vendite)</label>
-                <input id="mov-grams" inputmode="numeric" type="number" step="1" min="0" placeholder="es. 95">
+              
+              <div class="form-section">
+                <h3 class="form-section-title">Materiale Usato (opzionale)</h3>
+                
+                <div class="row">
+                  <label for="sale-spool">Filamento</label>
+                  <select id="sale-spool"><option value="">— nessuno —</option></select>
+                </div>
+                
+                <div class="row" id="sale-row-grams" hidden>
+                  <label for="sale-grams">Grammi usati</label>
+                  <input id="sale-grams" inputmode="numeric" type="number" step="1" min="1" placeholder="es. 95">
+                </div>
               </div>
-            </div>
-
-            <div class="row actions">
-              <button type="submit" class="btn primary" id="btn-add">Aggiungi</button>
-              <button type="button" class="btn" id="btn-sub">Sottrai</button>
-              <button type="button" id="btn-export" class="btn">Esporta</button>
-              <label class="btn file">Importa <input id="file-import" type="file" accept=".json" hidden></label>
-            </div>
-          </form>
+              
+              <div class="row actions">
+                <button type="submit" class="btn primary" id="btn-sale-submit">Registra Vendita</button>
+                <button type="button" id="btn-export" class="btn">Esporta</button>
+                <label class="btn file">Importa <input id="file-import" type="file" accept=".json" hidden></label>
+              </div>
+            </form>
+            
+            <!-- TAB SPESA -->
+            <form id="form-expense" class="mov-form">
+              <div class="form-section">
+                <h3 class="form-section-title">Dati Spesa</h3>
+                
+                <div class="row">
+                  <label for="expense-desc">Descrizione *</label>
+                  <input id="expense-desc" type="text" maxlength="160" placeholder="es. Nuova stampante, componenti, riparazioni..." required>
+                </div>
+                
+                <div class="row">
+                  <label for="expense-amount">Importo (€) *</label>
+                  <input id="expense-amount" inputmode="decimal" type="text" step="0.01" min="0.01" placeholder="es. 50.00" required>
+                </div>
+                
+                <div class="row">
+                  <label for="expense-date">Data</label>
+                  <input id="expense-date" type="date" required>
+                </div>
+              </div>
+              
+              <div class="row actions">
+                <button type="submit" class="btn primary danger" id="btn-expense-submit">Registra Spesa</button>
+              </div>
+            </form>
+            
+            <!-- TAB ACQUISTO MATERIALE -->
+            <form id="form-purchase" class="mov-form">
+              <div class="form-section">
+                <h3 class="form-section-title">Acquisto Filamento</h3>
+                
+                <div class="row">
+                  <label>Numero bobine</label>
+                  <div class="spool-count-selector">
+                    <button type="button" class="spool-count-btn" data-count="1">1</button>
+                    <button type="button" class="spool-count-btn" data-count="2">2</button>
+                    <button type="button" class="spool-count-btn" data-count="3">3</button>
+                    <button type="button" class="spool-count-btn" data-count="4">4</button>
+                    <button type="button" class="spool-count-btn" data-count="5">5</button>
+                    <button type="button" class="spool-count-btn" data-count="6">6</button>
+                  </div>
+                </div>
+                
+                <!-- Container per le bobine -->
+                <div id="purchase-spools-container"></div>
+                
+                <div class="row">
+                  <label for="purchase-shipping">Costo spedizione (€)</label>
+                  <input id="purchase-shipping" inputmode="decimal" type="text" step="0.01" min="0" placeholder="es. 5.00" value="0">
+                </div>
+                
+                <div class="row">
+                  <label for="purchase-date">Data</label>
+                  <input id="purchase-date" type="date" required>
+                </div>
+                
+                <div class="purchase-total">
+                  <span>Totale calcolato:</span>
+                  <strong id="purchase-total-value">€ 0.00</strong>
+                </div>
+              </div>
+              
+              <div class="row actions">
+                <button type="submit" class="btn primary" id="btn-purchase-submit">Registra Acquisto</button>
+              </div>
+            </form>
+          </div>
 
           <!-- SECONDO RIQUADRO -->
           <div class="card">
             <div class="toolbar">
               <select id="mov-filter" aria-label="Modalità elenco">
                 <option value="all">Tutti</option>
-                <option value="in">Entrate</option>
-                <option value="out">Uscite</option>
+                <option value="sale">Vendite</option>
+                <option value="expense">Spese</option>
+                <option value="purchase">Acquisti</option>
               </select>
-              <!-- Inizialmente CHECKED -->
-              <label class="chk"><input type="checkbox" id="mov-show-arch" checked> Mostra archiviati</label>
-              <div class="saldo">Saldo: <strong id="saldo">0,00 €</strong></div>
+              <label class="chk"><input type="checkbox" id="mov-show-arch" checked> Archiviati</label>
+              <div class="saldo">Saldo: <strong id="saldo">€ 0.00</strong></div>
             </div>
             <ul id="mov-list" class="list"></ul>
           </div>
@@ -97,15 +184,38 @@
           <div class="card">
             <div class="toolbar">
               <strong>Magazzino Filamenti</strong>
-              <button class="btn" id="btn-add-spool">Aggiungi bobina</button>
+              <button class="btn" id="btn-add-spool">+ Aggiungi</button>
             </div>
             <ul id="spool-list" class="list"></ul>
+          </div>
+          
+          <!-- Statistiche magazzino -->
+          <div class="card stats-card">
+            <h3 class="stats-title">📊 Riepilogo Magazzino</h3>
+            <div class="stats-grid">
+              <div class="stat-item">
+                <span class="stat-label">Bobine totali</span>
+                <span class="stat-value" id="spool-total-count">0</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Filamento disponibile</span>
+                <span class="stat-value" id="spool-total-grams">0g</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Valore stimato</span>
+                <span class="stat-value" id="spool-total-value">€ 0</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Materiale principale</span>
+                <span class="stat-value" id="spool-main-material">-</span>
+              </div>
+            </div>
           </div>
         </section>
 
         <!-- TO-DO -->
         <section id="page-todo" class="page" aria-label="To-Do">
-          <form id="todo-form" class="card form">
+          <form id="todo-form" class="card form-card">
             <div class="row">
               <label for="todo-desc">Attività</label>
               <input id="todo-desc" type="text" maxlength="140" placeholder="es. Chiamare cliente..." required>
@@ -127,8 +237,7 @@
 
           <div class="card">
             <div class="toolbar">
-              <!-- Inizialmente CHECKED -->
-              <label class="chk"><input type="checkbox" id="todo-show-arch" checked> Mostra archiviati</label>
+              <label class="chk"><input type="checkbox" id="todo-show-arch" checked> Archiviati</label>
             </div>
             <ul id="todo-list" class="list"></ul>
           </div>
@@ -152,11 +261,109 @@
                 <button id="btn-apply-range" class="btn" style="display:none;">Applica</button>
               </div>
             </div>
-            <div class="chart-wrap">
-              <canvas id="chart" aria-label="Saldo cumulato"></canvas>
+          </div>
+          
+          <!-- Grafico Flusso di Cassa -->
+          <div class="card chart-card">
+            <h3 class="chart-title">📈 Flusso di Cassa</h3>
+            <div class="chart-container">
+              <canvas id="chart-cashflow"></canvas>
             </div>
-            <div class="stats" id="stats"></div>
-            <div class="trend" id="trend"></div>
+            <div class="chart-legend" id="chart-legend">
+              <span class="legend-item"><span class="legend-color" style="background:var(--success)"></span> Entrate</span>
+              <span class="legend-item"><span class="legend-color" style="background:var(--danger)"></span> Uscite</span>
+              <span class="legend-item"><span class="legend-color" style="background:var(--primary)"></span> Saldo</span>
+            </div>
+          </div>
+          
+          <!-- Statistiche principali -->
+          <div class="stats-cards-row">
+            <div class="card stat-card">
+              <div class="stat-icon success">💰</div>
+              <div class="stat-info">
+                <span class="stat-label">Entrate</span>
+                <span class="stat-value success" id="stat-entrata">€ 0.00</span>
+              </div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-icon danger">💸</div>
+              <div class="stat-info">
+                <span class="stat-label">Uscite</span>
+                <span class="stat-value danger" id="stat-uscita">€ 0.00</span>
+              </div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-icon">📊</div>
+              <div class="stat-info">
+                <span class="stat-label">Saldo</span>
+                <span class="stat-value" id="stat-saldo">€ 0.00</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Spesa Filamento -->
+          <div class="card">
+            <h3 class="section-title">📦 Spesa Filamento</h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Bobine acquistate</span>
+                <span class="info-value" id="stat-bobine">0</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Costo materiale</span>
+                <span class="info-value" id="stat-materiale">€ 0.00</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Costo spedizione</span>
+                <span class="info-value" id="stat-spedizione">€ 0.00</span>
+              </div>
+              <div class="info-item highlight">
+                <span class="info-label">Totale</span>
+                <span class="info-value" id="stat-totale-filamento">€ 0.00</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Stampe Totali -->
+          <div class="card">
+            <h3 class="section-title">🖨️ Stampe Totali</h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Lavori completati</span>
+                <span class="info-value" id="stat-stampe">0</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Grammi usati</span>
+                <span class="info-value" id="stat-grammi-usati">0g</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Grafico Profitto -->
+          <div class="card chart-card">
+            <h3 class="chart-title">📈 Profitto Lordo</h3>
+            <div class="chart-container">
+              <canvas id="chart-profit"></canvas>
+            </div>
+            <div class="profit-summary">
+              <span>Utile stimato:</span>
+              <strong id="stat-profitto">€ 0.00</strong>
+            </div>
+          </div>
+          
+          <!-- Più Usato -->
+          <div class="card">
+            <h3 class="section-title">🏆 Più Usato</h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Materiale</span>
+                <span class="info-value accent" id="stat-materiale-piu-usato">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Marca</span>
+                <span class="info-value accent" id="stat-marca-piu-usata">-</span>
+              </div>
+            </div>
           </div>
         </section>
       </main>
@@ -182,7 +389,17 @@
     <dialog id="dlg-settings">
       <form method="dialog" class="card" style="max-width:520px;">
         <h2 style="margin:0 0 8px;">Impostazioni</h2>
-        <p class="muted" style="margin:0 0 12px;">Preferenze dell’app</p>
+        <p class="muted" style="margin:0 0 12px;">Preferenze dell'app</p>
+
+        <div class="row">
+          <label for="set-theme">Tema</label>
+          <select id="set-theme">
+            <option value="system">Sistema</option>
+            <option value="blue">Blu (iPhone)</option>
+            <option value="green">Verde</option>
+            <option value="purple">Viola</option>
+          </select>
+        </div>
 
         <div class="row">
           <label for="set-palette">Palette colori</label>
@@ -194,13 +411,6 @@
           </select>
         </div>
 
-        <div class="row">
-          <label class="chk">
-            <input type="checkbox" id="set-disable-archive" checked>
-            Mostra sempre tutto (disattiva archivio)
-          </label>
-        </div>
-
         <div class="row actions" style="justify-content:flex-end;">
           <button value="cancel" class="btn">Chiudi</button>
         </div>
@@ -209,7 +419,6 @@
 
     <script src="js/db.js"></script>
     <script src="js/charts.js"></script>
-    <!-- se non usi questo file puoi rimuoverlo, ma un 404 qui non blocca l'app -->
     <script src="js/adapters/remoteAdapter.js"></script>
     <script src="js/app.js"></script>
   </body>

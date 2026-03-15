@@ -1,10 +1,12 @@
-// MarketSpace v1.3.12 (persistenza "Mostra archiviati" + icona Archivia box 2D con freccia)
+// MarketSpace v1.4 - Nuova versione con form a tab
 const state = {
   version: "0.0.0",
   username: "default",
   currentPage: "page-movimenti",
+  theme: "system",
   palette: "blue",
-  submitMode: "add" // "add" | "sub"
+  submitMode: "add",
+  purchaseSpoolCount: 1
 };
 
 const PALETTES = {
@@ -13,6 +15,25 @@ const PALETTES = {
   green:  { light:{acc:"#10b981",weak:"#bbf7d0"}, dark:{acc:"#34d399",weak:"#0a2e20"} },
   purple: { light:{acc:"#8b5cf6",weak:"#ddd6fe"}, dark:{acc:"#a78bfa",weak:"#2a0a55"} },
 };
+
+const COLORS = [
+  { name: "Nero", hex: "#1a1a1a" },
+  { name: "Bianco", hex: "#f5f5f5" },
+  { name: "Rosso", hex: "#e53935" },
+  { name: "Blu", hex: "#1e88e5" },
+  { name: "Verde", hex: "#43a047" },
+  { name: "Giallo", hex: "#fdd835" },
+  { name: "Arancione", hex: "#fb8c00" },
+  { name: "Viola", hex: "#8e24aa" },
+  { name: "Rosa", hex: "#d81b60" },
+  { name: "Grigio", hex: "#757575" },
+  { name: "Marrone", hex: "#6d4c41" },
+  { name: "Trasparente", hex: "#90caf9" },
+  { name: "Oro", hex: "#ffd700" },
+  { name: "Argento", hex: "#c0c0c0" },
+  { name: "Beige", hex: "#f5f5dc" },
+  { name: "Turchese", hex: "#00acc1" },
+];
 
 function applyPalette(name){
   const dark = matchMedia('(prefers-color-scheme: dark)').matches;
@@ -24,6 +45,28 @@ function applyPalette(name){
   DB.setMeta("palette", name);
 }
 
+function applyTheme(themeName){
+  state.theme = themeName;
+  const root = document.documentElement;
+  
+  if (themeName === "system") {
+    root.removeAttribute("data-theme");
+    root.removeAttribute("data-mode");
+  } else {
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    root.setAttribute("data-theme", themeName);
+    root.setAttribute("data-mode", dark ? "dark" : "light");
+  }
+  DB.setMeta("theme", themeName);
+}
+
+// Listen for system theme changes
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if (state.theme === "system") {
+    applyTheme("system");
+  }
+});
+
 async function loadConfig(){
   try{
     const res = await fetch("config.json?ts="+Date.now());
@@ -33,29 +76,24 @@ async function loadConfig(){
   }catch{}
 }
 
-/* ====== FUNZIONI USATE NEL BIND ====== */
-async function archiveDoneTodos(){
-  const items = await DB.listTasks(state.username,true);
-  for (const t of items){ if (t.done && !t.archived) await DB.archiveTask(t.id); }
-  refreshTodos();
-}
-
-/* ===== Helpers icone inline (stile Lucide semplificate) ===== */
+/* ===== Helpers icone inline ===== */
 function $ico(name){
   const ns='http://www.w3.org/2000/svg';
-  const svg=document.createElementNS(ns,'svg'); svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('width','18'); svg.setAttribute('height','18');
-  svg.setAttribute('fill','none'); svg.setAttribute('stroke','currentColor'); svg.setAttribute('stroke-width','2'); svg.setAttribute('stroke-linecap','round'); svg.setAttribute('stroke-linejoin','round');
+  const svg=document.createElementNS(ns,'svg'); 
+  svg.setAttribute('viewBox','0 0 24 24'); 
+  svg.setAttribute('width','18'); 
+  svg.setAttribute('height','18');
+  svg.setAttribute('fill','none'); 
+  svg.setAttribute('stroke','currentColor'); 
+  svg.setAttribute('stroke-width','2'); 
+  svg.setAttribute('stroke-linecap','round'); 
+  svg.setAttribute('stroke-linejoin','round');
   const p=(d)=>{ const path=document.createElementNS(ns,'path'); path.setAttribute('d',d); return path; };
+  
   if(name==='edit'){ svg.append(p('M12 20h9')); svg.append(p('M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z')); }
-  // ARCHIVE: scatola 2D (rettangolo) con freccia verso il basso all’interno
-  else if(name==='archive'){ 
-    svg.append(p('M4 5h16v14H4z'));      // box 2D
-    svg.append(p('M12 8v7'));            // stelo freccia
-    svg.append(p('M9 12l3 3 3-3'));      // punta freccia
-  }
+  else if(name==='archive'){ svg.append(p('M4 5h16v14H4z')); svg.append(p('M12 8v7')); svg.append(p('M9 12l3 3 3-3')); }
   else if(name==='undo'){ svg.append(p('M9 14l-4-4 4-4')); svg.append(p('M5 10h8a6 6 0 1 1 0 12H9')); }
   else if(name==='trash'){ svg.append(p('M3 6h18')); svg.append(p('M8 6V4h8v2')); svg.append(p('M19 6l-1 14H6L5 6')); }
-  else if(name==='save'){ svg.append(p('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z')); svg.append(p('M17 21V13H7v8')); svg.append(p('M7 3v5h8')); }
   return svg;
 }
 
@@ -73,22 +111,28 @@ async function boot(){
     if ("serviceWorker" in navigator){
       try{ await navigator.serviceWorker.register("sw.js"); }catch(e){ console.warn("SW:", e); }
     }
-    try{ await DB.open(); }catch(e){ console.error("IndexedDB:", e); alert("Errore apertura database locale. L'app funziona ma non salverà i dati finché non consenti l'archiviazione."); }
+    try{ await DB.open(); }catch(e){ console.error("IndexedDB:", e); alert("Errore apertura database locale."); }
 
+    // Carica preferenze
     const pal = await DB.getMeta("palette"); applyPalette(pal||"blue");
-    const date = document.getElementById("mov-date"); if (date) date.valueAsDate = new Date();
+    const theme = await DB.getMeta("theme"); applyTheme(theme||"system");
+    
+    const date = document.getElementById("sale-date"); 
+    if (date) date.valueAsDate = new Date();
+    const dateExp = document.getElementById("expense-date");
+    if (dateExp) dateExp.valueAsDate = new Date();
+    const datePur = document.getElementById("purchase-date");
+    if (datePur) datePur.valueAsDate = new Date();
 
     bindEvents();
 
-    // Stato persistente delle spunte "Mostra archiviati"
     const mck = document.getElementById("mov-show-arch");
     const tck = document.getElementById("todo-show-arch");
     const movPref  = await DB.getMeta("mov_show_arch");
     const todoPref = await DB.getMeta("todo_show_arch");
-    if (mck)  mck.checked  = !!movPref;   // di default false se nulla
-    if (tck)  tck.checked  = !!todoPref;  // di default false se nulla
+    if (mck)  mck.checked  = !!movPref;
+    if (tck)  tck.checked  = !!todoPref;
 
-    // Recovery manuale opzionale: ?unarchive=1
     if (new URL(location.href).searchParams.get("unarchive") === "1"){
       await recoverUnarchiveAll();
     }
@@ -97,41 +141,57 @@ async function boot(){
     await refreshTodos();
   } catch(e){
     console.error("Boot error:", e);
-    alert("Errore in avvio. Fai un hard refresh (Ctrl+F5). Vedi Console per dettagli.");
+    alert("Errore in avvio. Fai un hard refresh (Ctrl+F5).");
   } finally {
     hideSplash();
   }
 }
 document.addEventListener("DOMContentLoaded", boot);
 
+/* ===== EVENT BINDING ===== */
 function bindEvents(){
   const $ = (id)=>document.getElementById(id);
   const on = (el,ev,fn)=>{ if(el && typeof fn === "function") el.addEventListener(ev,fn); };
 
+  // Tab navigation
   document.querySelectorAll(".tab").forEach(btn=>{
     btn.addEventListener("click",()=>switchPage(btn.dataset.target));
   });
 
-  // Impostazioni
+  // Form tabs (sale/expense/purchase)
+  document.querySelectorAll(".form-tab").forEach(btn=>{
+    btn.addEventListener("click",()=>switchFormTab(btn.dataset.tab));
+  });
+
+  // Settings
   const dlg = $("dlg-settings");
   on($("btn-settings"),"click",()=>{
     $("set-palette").value = state.palette || "blue";
+    $("set-theme").value = state.theme || "system";
     dlg.showModal();
   });
   on($("set-palette"),"change",(e)=>applyPalette(e.target.value));
+  on($("set-theme"),"change",(e)=>applyTheme(e.target.value));
 
-  // Movimenti
-  on($("mov-form"),"submit", onAddMovement);
+  // Sale form
+  on($("form-sale"),"submit", onAddSale);
+  on($("sale-spool"),"change", onSaleSpoolChange);
+  
+  // Expense form
+  on($("form-expense"),"submit", onAddExpense);
+  
+  // Purchase form
+  on($("form-purchase"),"submit", onAddPurchase);
+  initPurchaseSpoolSelector();
+
+  // Movements list
   on($("mov-filter"),"change", refreshMovements);
   on($("mov-show-arch"),"change", e=>{ DB.setMeta("mov_show_arch", e.target.checked); refreshMovements(); });
-  on($("mov-spool"),"change", onSpoolChange);
   on($("btn-export"),"click", onExport);
   on($("file-import"),"change", e=>onImport(e.target.files[0]));
-  on($("btn-sub"),"click", ()=>{ state.submitMode="sub"; $("mov-form").requestSubmit(); });
-  on($("btn-add"),"click", ()=>{ state.submitMode="add"; });
 
-  // Magazzino
-  on($("btn-add-spool"),"click", onAddSpool);
+  // Warehouse
+  on($("btn-add-spool"),"click", onAddSpoolManual);
 
   // To-Do
   const todoForm = $("todo-form");
@@ -156,91 +216,318 @@ function switchPage(id){
   document.getElementById("page-title").textContent = map[id]||"MarketSpace";
   state.currentPage = id;
   if (id==="page-analisi") renderAnalytics();
-  if (id==="page-magazzino") refreshSpools();
+  if (id==="page-magazzino") { refreshSpools(); refreshSpoolStats(); }
 }
 
-/* ===== Movimenti ===== */
-function onSpoolChange(){
-  const sel = document.getElementById("mov-spool");
-  const row = document.getElementById("row-grams");
+function switchFormTab(tabName){
+  document.querySelectorAll(".form-tab").forEach(t=>t.classList.remove("active"));
+  document.querySelector(`.form-tab[data-tab="${tabName}"]`).classList.add("active");
+  document.querySelectorAll(".mov-form").forEach(f=>f.classList.remove("active"));
+  document.getElementById(`form-${tabName}`).classList.add("active");
+}
+
+/* ===== SALE FORM ===== */
+function onSaleSpoolChange(){
+  const sel = document.getElementById("sale-spool");
+  const row = document.getElementById("sale-row-grams");
   if (row) row.hidden = !(sel && sel.value);
 }
 
-async function onAddMovement(ev){
+async function onAddSale(ev){
   ev.preventDefault();
 
-  let amount = Number(String(document.getElementById("mov-amount").value).replace(",","."));
-  if (!Number.isFinite(amount) || amount<=0) return alert("Inserisci un importo valido (> 0).");
+  let amount = Number(String(document.getElementById("sale-amount").value).replace(",","."));
+  if (!Number.isFinite(amount) || amount<=0) return alert("Inserisci un importo valido.");
 
-  const isAdd = state.submitMode === "add";
-  amount = isAdd ? Math.abs(amount) : -Math.abs(amount);
+  const itemName = String(document.getElementById("sale-item").value||"").trim();
+  const desc = String(document.getElementById("sale-desc").value||"").trim();
+  const customer = String(document.getElementById("sale-customer").value||"").trim();
+  if (!itemName) return alert("Inserisci l'oggetto.");
+  if (!desc) return alert("Inserisci una descrizione.");
 
-  const itemName = String(document.getElementById("mov-item").value||"").trim();
-  const desc = String(document.getElementById("mov-desc").value||"").trim();
-  if (!itemName) return alert("Inserisci il Nome Oggetto.");
-  if (!desc) return alert("Inserisci la Descrizione.");
-
-  const dInp = document.getElementById("mov-date");
+  const dInp = document.getElementById("sale-date");
   const d = dInp && dInp.value ? new Date(dInp.value) : new Date();
   const iso = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
 
-  let spoolId = document.getElementById("mov-spool")?.value || null;
+  let spoolId = document.getElementById("sale-spool")?.value || null;
   let gramsUsed = 0, materialCost = 0;
 
-  if (isAdd && spoolId){
-    gramsUsed = Number(document.getElementById("mov-grams").value);
-    if (!Number.isFinite(gramsUsed) || gramsUsed<=0) return alert("Inserisci i grammi usati (>0) o deseleziona il filamento.");
+  if (spoolId){
+    gramsUsed = Number(document.getElementById("sale-grams").value);
+    if (!Number.isFinite(gramsUsed) || gramsUsed<=0) return alert("Inserisci i grammi usati.");
     const s = await DB.getSpool(Number(spoolId));
     if (!s) return alert("Bobina non trovata.");
-    if (s.grams_available < gramsUsed) return alert("Grammatura insufficiente in magazzino.");
+    if (s.grams_available < gramsUsed) return alert("Grammatura insufficiente.");
     materialCost = s.price_per_kg * (gramsUsed/1000);
     await DB.consumeSpool(s.id, gramsUsed);
-  } else {
-    spoolId=null; gramsUsed=0; materialCost=0;
   }
 
   await DB.addMovement({
     username:state.username,
-    amount, description:desc, itemName,
-    date:iso, archived:false,
-    spoolId, gramsUsed, materialCost
+    type: 'sale',
+    amount,
+    description:desc,
+    itemName,
+    customer,
+    date:iso,
+    archived:false,
+    spoolId, 
+    gramsUsed, 
+    materialCost
   });
 
-  document.getElementById("mov-amount").value = "";
-  document.getElementById("mov-item").value = "";
-  document.getElementById("mov-desc").value = "";
-  const g = document.getElementById("mov-grams"); if (g) g.value = "";
-  const sp = document.getElementById("mov-spool"); if (sp) sp.value = "";
-  if (dInp) dInp.valueAsDate = new Date();
-  onSpoolChange();
-  state.submitMode = "add";
+  // Reset form
+  document.getElementById("sale-amount").value = "";
+  document.getElementById("sale-item").value = "";
+  document.getElementById("sale-desc").value = "";
+  document.getElementById("sale-customer").value = "";
+  document.getElementById("sale-grams").value = "";
+  document.getElementById("sale-spool").value = "";
+  document.getElementById("sale-date").valueAsDate = new Date();
+  onSaleSpoolChange();
 
   await refreshMovements();
   if (state.currentPage==="page-analisi") renderAnalytics();
 }
 
+/* ===== EXPENSE FORM ===== */
+async function onAddExpense(ev){
+  ev.preventDefault();
+
+  let amount = Number(String(document.getElementById("expense-amount").value).replace(",","."));
+  if (!Number.isFinite(amount) || amount<=0) return alert("Inserisci un importo valido.");
+  
+  amount = -Math.abs(amount); // negativo per spesa
+
+  const desc = String(document.getElementById("expense-desc").value||"").trim();
+  if (!desc) return alert("Inserisci una descrizione.");
+
+  const dInp = document.getElementById("expense-date");
+  const d = dInp && dInp.value ? new Date(dInp.value) : new Date();
+  const iso = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
+
+  await DB.addMovement({
+    username:state.username,
+    type: 'expense',
+    amount,
+    description: desc,
+    itemName: '',
+    customer: '',
+    date: iso,
+    archived: false
+  });
+
+  document.getElementById("expense-amount").value = "";
+  document.getElementById("expense-desc").value = "";
+  document.getElementById("expense-date").valueAsDate = new Date();
+
+  await refreshMovements();
+  if (state.currentPage==="page-analisi") renderAnalytics();
+}
+
+/* ===== PURCHASE FORM ===== */
+function initPurchaseSpoolSelector(){
+  const container = document.getElementById("purchase-spools-container");
+  document.querySelectorAll(".spool-count-btn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      document.querySelectorAll(".spool-count-btn").forEach(b=>b.classList.remove("selected"));
+      btn.classList.add("selected");
+      state.purchaseSpoolCount = parseInt(btn.dataset.count);
+      renderPurchaseSpools();
+    });
+  });
+  // Select first by default
+  document.querySelector(".spool-count-btn[data-count='1']")?.classList.add("selected");
+  renderPurchaseSpools();
+}
+
+function renderPurchaseSpools(){
+  const container = document.getElementById("purchase-spools-container");
+  container.innerHTML = '';
+  
+  for (let i = 0; i < state.purchaseSpoolCount; i++) {
+    const item = document.createElement('div');
+    item.className = 'purchase-spool-item';
+    item.innerHTML = `
+      <h4>Bobina ${i + 1}</h4>
+      <div class="row">
+        <label>Materiale</label>
+        <select class="purchase-material" id="pur-material-${i}">
+          ${DB.MATERIALS.map(m=>`<option value="${m}">${m}</option>`).join('')}
+        </select>
+      </div>
+      <div class="row">
+        <label>Marca</label>
+        <input type="text" class="purchase-brand" id="pur-brand-${i}" placeholder="es. Esun, Hatchbox...">
+      </div>
+      <div class="row">
+        <label>Colore</label>
+        <div class="color-picker-wrapper" id="pur-color-${i}">
+          ${COLORS.map((c, idx)=>`
+            <input type="radio" name="pur-color-${i}" value="${c.hex}" id="pur-color-${i}-${idx}" class="color-option-input" ${idx === 0 ? 'checked' : ''}>
+            <label for="pur-color-${i}-${idx}" class="color-option ${idx === 0 ? 'selected' : ''}" style="background:${c.hex}" title="${c.name}" data-color="${c.hex}" data-name="${c.name}"></label>
+          `).join('')}
+        </div>
+      </div>
+      <div class="row">
+        <label>Grammi</label>
+        <select class="purchase-grams" id="pur-grams-${i}">
+          ${DB.GRAM_OPTIONS.map(g=>`<option value="${g}">${g}g</option>`).join('')}
+        </select>
+      </div>
+      <div class="row">
+        <label>Costo bobina (€)</label>
+        <input type="text" class="purchase-cost" id="pur-cost-${i}" inputmode="decimal" placeholder="es. 20.00">
+      </div>
+    `;
+    container.appendChild(item);
+    
+    // Add color picker events
+    item.querySelectorAll('.color-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        item.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+      });
+    });
+  }
+  
+  // Add change listeners to update total
+  container.addEventListener('input', updatePurchaseTotal);
+  container.addEventListener('change', updatePurchaseTotal);
+}
+
+function updatePurchaseTotal(){
+  const shippingCost = Number(String(document.getElementById("purchase-shipping").value).replace(",",".")) || 0;
+  let spoolsCost = 0;
+  
+  for (let i = 0; i < state.purchaseSpoolCount; i++) {
+    const costEl = document.getElementById(`pur-cost-${i}`);
+    if (costEl && costEl.value) {
+      spoolsCost += Number(String(costEl.value).replace(",",".")) || 0;
+    }
+  }
+  
+  const total = spoolsCost + shippingCost;
+  document.getElementById("purchase-total-value").textContent = formatCurrency(total);
+}
+
+async function onAddPurchase(ev){
+  ev.preventDefault();
+
+  const shippingCost = Number(String(document.getElementById("purchase-shipping").value).replace(",",".")) || 0;
+  const spoolsData = [];
+  
+  for (let i = 0; i < state.purchaseSpoolCount; i++) {
+    const material = document.getElementById(`pur-material-${i}`)?.value || "PLA";
+    const brand = String(document.getElementById(`pur-brand-${i}`)?.value || "").trim();
+    const grams = Number(document.getElementById(`pur-grams-${i}`)?.value) || 1000;
+    const cost = Number(String(document.getElementById(`pur-cost-${i}`)?.value || "0").replace(",",".")) || 0;
+    
+    const colorEl = document.querySelector(`#pur-color-${i} .color-option.selected`);
+    const color = colorEl?.dataset.color || "#888888";
+    const colorName = colorEl?.dataset.name || "Nero";
+    
+    if (cost <= 0) return alert(`Inserisci il costo per la bobina ${i + 1}`);
+    
+    spoolsData.push({ material, brand, color, colorName, grams, cost });
+  }
+  
+  const dInp = document.getElementById("purchase-date");
+  const d = dInp && dInp.value ? new Date(dInp.value) : new Date();
+  const iso = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
+  
+  // Calcola totale
+  const totalSpoolsCost = spoolsData.reduce((sum, s) => sum + s.cost, 0);
+  const total = totalSpoolsCost + shippingCost;
+  
+  // Aggiungi bobine al magazzino
+  await DB.addMultipleSpools(spoolsData, shippingCost);
+  
+  // Registra movimento di acquisto
+  await DB.addMovement({
+    username: state.username,
+    type: 'purchase',
+    amount: -total,
+    description: `Acquisto ${spoolsData.length} bobina/e`,
+    itemName: spoolsData.map(s => `${s.material} ${s.colorName}`).join(", "),
+    customer: '',
+    date: iso,
+    archived: false,
+    shippingCost
+  });
+  
+  // Reset form
+  document.getElementById("purchase-shipping").value = "0";
+  document.getElementById("purchase-date").valueAsDate = new Date();
+  state.purchaseSpoolCount = 1;
+  document.querySelectorAll(".spool-count-btn").forEach(b=>b.classList.remove("selected"));
+  document.querySelector(".spool-count-btn[data-count='1']")?.classList.add("selected");
+  renderPurchaseSpools();
+  updatePurchaseTotal();
+  
+  // Clear costs
+  for (let i = 0; i < 6; i++) {
+    const costEl = document.getElementById(`pur-cost-${i}`);
+    if (costEl) costEl.value = "";
+  }
+  
+  await refreshMovements();
+  await refreshSpools();
+  await refreshSpoolStats();
+  if (state.currentPage === "page-analisi") renderAnalytics();
+}
+
+/* ===== MOVIMENTS LIST ===== */
 async function refreshMovements(){
   const filter = document.getElementById("mov-filter").value;
   const showArch = document.getElementById("mov-show-arch").checked;
   const list = document.getElementById("mov-list"); list.innerHTML="";
   const rows = await DB.listMovements(state.username, filter, showArch);
-  let saldo=0; for (const m of rows) if (!m.archived) saldo += m.amount;
-  document.getElementById("saldo").textContent = new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(saldo);
+  
+  let saldo = 0;
+  for (const m of rows) if (!m.archived && m.type !== 'purchase') saldo += m.amount;
+  
+  document.getElementById("saldo").innerHTML = `<span>Saldo:</span> <strong>${formatCurrency(saldo)}</strong>`;
 
   for (const m of rows){
-    const li = document.createElement("li"); if (m.archived) li.classList.add("archived");
+    const li = document.createElement("li"); 
+    if (m.archived) li.classList.add("archived");
+    
     const left = document.createElement("div");
-    const right = document.createElement("div"); right.className="item-actions";
+    left.className = "item-main";
+    
     const dateStr = new Intl.DateTimeFormat("it-IT").format(new Date(m.date));
-    const amountStr = new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(m.amount);
-    let extra = "";
-    if (m.spoolId && m.gramsUsed){
-      const costStr = new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(m.materialCost||0);
-      extra=` · Filamento: #${m.spoolId} · ${m.gramsUsed} g (costo ${costStr})`;
+    const amountStr = formatCurrency(Math.abs(m.amount));
+    const typeBadge = `<span class="badge ${m.type}">${m.type === 'sale' ? 'Vendita' : m.type === 'expense' ? 'Spesa' : 'Acquisto'}</span>`;
+    
+    let mainInfo = "";
+    if (m.type === 'sale') {
+      mainInfo = `<div class="item-title"><strong>${m.itemName || 'Vendita'}</strong> ${m.customer ? `• ${m.customer}` : ''}</div>`;
+    } else if (m.type === 'expense') {
+      mainInfo = `<div class="item-title"><strong>${m.description || 'Spesa'}</strong></div>`;
+    } else {
+      mainInfo = `<div class="item-title"><strong>${m.itemName || 'Acquisto materiale'}</strong></div>`;
     }
-    const namePart = (m.itemName ? `<strong>${m.itemName}</strong> — ` : "");
-    left.innerHTML = `<div>${namePart}${amountStr} — ${m.description||""}${extra}</div><div class="muted">${dateStr}</div>`;
+    
+    let extra = "";
+    if (m.type === 'sale' && m.spoolId && m.gramsUsed){
+      extra = `<div class="item-meta">Filamento: #${m.spoolId} • ${m.gramsUsed}g • Costo: ${formatCurrency(m.materialCost || 0)}</div>`;
+    }
+    
+    left.innerHTML = `
+      ${typeBadge}
+      ${mainInfo}
+      <div class="item-sub">${m.description || ''} • ${dateStr}</div>
+      ${extra}
+    `;
 
+    const right = document.createElement("div"); 
+    right.className="item-actions";
+    
+    const amountEl = document.createElement("div");
+    amountEl.style.cssText = `font-weight:600; font-size:1rem; ${m.type === 'sale' ? 'color:var(--success)' : 'color:var(--danger)'}`;
+    amountEl.textContent = (m.type === 'sale' ? '+' : '-') + amountStr;
+    
     const mkBtn = (title,icon,handler)=>{
       const b=document.createElement("button");
       b.className="icon-btn icon-only"; b.title=title; b.setAttribute("aria-label",title);
@@ -248,18 +535,17 @@ async function refreshMovements(){
     };
 
     const btnEdit = mkBtn("Modifica","edit", async()=>{
-      const itemRaw = prompt("Nome oggetto:", m.itemName ?? "");
+      const itemRaw = prompt("Oggetto:", m.itemName ?? "");
       if (itemRaw === null) return;
       const descRaw = prompt("Descrizione:", m.description ?? "");
       if (descRaw === null) return;
-      const amtRaw  = prompt("Importo (usa punto per i decimali):", String(Math.abs(Number(m.amount)||0)));
+      const amtRaw  = prompt("Importo:", String(Math.abs(Number(m.amount)||0)));
       if (amtRaw === null) return;
 
       const item = String(itemRaw).trim();
       const desc = String(descRaw).trim();
       const amt  = Number(String(amtRaw).replace(",", "."));
-      if (!item) return alert("Nome oggetto obbligatorio.");
-      if (!desc) return alert("Descrizione obbligatoria.");
+      if (!item) return alert("Oggetto obbligatorio.");
       if (!Number.isFinite(amt) || amt<=0) return alert("Importo non valido.");
 
       const finalAmount = (m.amount>=0) ? Math.abs(amt) : -Math.abs(amt);
@@ -273,66 +559,95 @@ async function refreshMovements(){
     });
 
     const btnDel = mkBtn("Elimina","trash", async()=>{
-      if (!confirm("Eliminare definitivamente questa transazione?")) return;
+      if (!confirm("Eliminare definitivamente?")) return;
       await DB.deleteMovement(m.id);
       await refreshMovements(); if (state.currentPage==="page-analisi") renderAnalytics();
     });
 
-    right.append(btnEdit, btnArch, btnDel);
+    right.append(amountEl, btnEdit, btnArch, btnDel);
     li.append(left, right); list.appendChild(li);
   }
 
-  const sel = document.getElementById("mov-spool");
-  const keep = sel.value;
+  // Aggiorna select spool per vendite
+  const sel = document.getElementById("sale-spool");
   const spools = await DB.listSpools();
-  sel.innerHTML = '<option value="">— nessuno —</option>' + spools.map(s=>`<option value="${s.id}">${s.name} · ${s.grams_available} g</option>`).join("");
-  sel.value = spools.some(s=>String(s.id)===keep) ? keep : "";
+  sel.innerHTML = '<option value="">— nessuno —</option>' + spools.map(s=>{
+    const colorBox = `<span class="spool-color" style="background:${s.color || '#888'}"></span>`;
+    return `<option value="${s.id}">${colorBox} ${s.name || s.material} ${s.brand ? '- ' + s.brand : ''} • ${s.grams_available}g</option>`;
+  }).join("");
 }
 
-/* ===== Magazzino ===== */
-async function onAddSpool(){
+/* ===== WAREHOUSE ===== */
+async function onAddSpoolManual(){
   const name = (prompt("Nome/descrizione bobina:")||"").trim(); if (!name) return;
-  const price = Number(prompt("Prezzo €/kg:","20")); if (!Number.isFinite(price)||price<=0) return alert("Prezzo non valido.");
+  const material = prompt("Materiale (PLA, PETG, ABS, TPU...):", "PLA") || "PLA";
+  const brand = (prompt("Marca:")||"").trim();
   const grams = Number(prompt("Grammi disponibili:","1000")); if (!Number.isFinite(grams)||grams<0) return alert("Grammatura non valida.");
-  await DB.addSpool({name, price_per_kg:price, grams_available:grams, archived:false});
+  const price = Number(prompt("Prezzo €/kg:","20")); if (!Number.isFinite(price)||price<=0) return alert("Prezzo non valido.");
+  
+  // Pick color
+  const colorNames = COLORS.map(c=>c.name).join(", ");
+  let colorHex = "#888888";
+  const colorName = prompt(`Colore (${colorNames}):`, "Nero");
+  if (colorName) {
+    const found = COLORS.find(c=>c.name.toLowerCase() === colorName.toLowerCase());
+    if (found) colorHex = found.hex;
+  }
+  
+  await DB.addSpool({name, material, brand, color: colorHex, grams_total: grams, grams_available: grams, price_per_kg: price, archived:false});
   refreshSpools();
+  refreshSpoolStats();
 }
+
 async function refreshSpools(){
   const list = document.getElementById("spool-list"); list.innerHTML="";
   const rows = await DB.listSpools(true);
   for (const s of rows){
-    const li = document.createElement("li"); if (s.archived) li.classList.add("archived");
+    const li = document.createElement("li"); 
+    if (s.archived) li.classList.add("archived");
+    
     const left = document.createElement("div");
-    left.innerHTML = `<div><strong>${s.name}</strong> — € ${(s.price_per_kg).toFixed(2)}/kg</div><div class="muted">Disponibili: ${s.grams_available} g</div>`;
-    const right = document.createElement("div"); right.className="item-actions";
+    left.className = "item-main";
+    
+    const colorBox = `<span class="spool-color" style="background:${s.color || '#888'}"></span>`;
+    left.innerHTML = `
+      <div class="item-title">${colorBox} <strong>${s.name || s.material}</strong> ${s.brand ? `- ${s.brand}` : ''}</div>
+      <div class="item-sub">${s.material} • ${s.grams_available}g disponibili • €${s.price_per_kg}/kg</div>
+    `;
+    
+    const right = document.createElement("div"); 
+    right.className = "item-actions";
 
     const mkBtn = (title,icon,handler)=>{ const b=document.createElement("button"); b.className="icon-btn icon-only"; b.title=title; b.appendChild($ico(icon)); b.addEventListener("click",handler); return b; };
 
-    const edit = mkBtn("Modifica","edit",async()=>{ const name=prompt("Nome/descrizione:",s.name)??s.name; const price=Number(prompt("Prezzo €/kg:",String(s.price_per_kg)))||s.price_per_kg; await DB.editSpool(s.id,{name:String(name||"").trim(),price_per_kg:price}); refreshSpools(); });
-    const tog  = mkBtn(s.archived?"Ripristina":"Archivia", s.archived?"undo":"archive", async()=>{ if(s.archived){ await DB.editSpool(s.id,{archived:false}); } else { await DB.archiveSpool(s.id);} refreshSpools(); });
+    const edit = mkBtn("Modifica","edit",async()=>{ 
+      const name=prompt("Nome:",s.name)??s.name; 
+      const price=Number(prompt("Prezzo €/kg:",String(s.price_per_kg)))||s.price_per_kg; 
+      const grams=Number(prompt("Grammi:",String(s.grams_available)))||s.grams_available;
+      await DB.editSpool(s.id,{name:String(name||"").trim(),price_per_kg:price,grams_available:grams}); 
+      refreshSpools();
+      refreshSpoolStats();
+    });
+    const tog  = mkBtn(s.archived?"Ripristina":"Archivia", s.archived?"undo":"archive", async()=>{ 
+      if(s.archived){ await DB.editSpool(s.id,{archived:false}); } 
+      else { await DB.archiveSpool(s.id);}
+      refreshSpools();
+      refreshSpoolStats();
+    });
 
     right.append(edit,tog); li.append(left,right); list.appendChild(li);
   }
 }
 
-/* ===== Export/Import ===== */
-async function onExport(){
-  const data = await DB.exportAll(state.username);
-  const blob = new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = Object.assign(document.createElement("a"), {href:url, download:`marketspace_${state.username}_${new Date().toISOString().slice(0,10)}.json`});
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-}
-async function onImport(file){
-  if(!file) return;
-  try{
-    const ok = await DB.importAll(state.username, JSON.parse(await file.text()));
-    if (!ok) return alert("File non valido o corrotto.");
-    await refreshMovements(); await refreshTodos(); if(state.currentPage==="page-analisi") renderAnalytics();
-  }catch{ alert("Errore nel parsing del file."); }
+async function refreshSpoolStats(){
+  const stats = await DB.getSpoolStats();
+  document.getElementById("spool-total-count").textContent = stats.totalSpools;
+  document.getElementById("spool-total-grams").textContent = formatGrams(stats.totalGrams);
+  document.getElementById("spool-total-value").textContent = formatCurrency(stats.totalValue);
+  document.getElementById("spool-main-material").textContent = stats.mostMaterial.name;
 }
 
-/* ===== To-Do ===== */
+/* ===== TO-DO ===== */
 let _addingTodo = false;
 async function onAddTodo(ev){
   ev.preventDefault();
@@ -355,28 +670,25 @@ async function refreshTodos(){
   for (const t of items){
     const li = document.createElement("li");
     if (t.archived) li.classList.add("archived");
-    const prClass = t.priority ? ("prio-"+t.priority.replace(/_/g,"-")) : "";
-    if (prClass) li.classList.add(prClass);
+    if (t.priority) li.classList.add("prio-"+t.priority.replace(/_/g,"-"));
 
     const left = document.createElement("div");
     const prTxt = { "very-high":"Molto alta", "high":"Alta", "normal":"Normale", "low":"Bassa" }[t.priority] || t.priority || "Normale";
-    left.innerHTML = `<div><strong>${t.description||"(senza testo)"}</strong></div><div class="muted">Priorità: ${prTxt}</div>`;
+    left.innerHTML = `<div><strong>${t.description||"(senza testo)"}</strong></div><div class="item-sub">Priorità: ${prTxt}</div>`;
 
     const right = document.createElement("div"); right.className="item-actions";
     const mkBtn = (title,icon,handler)=>{ const b=document.createElement("button"); b.className="icon-btn icon-only"; b.title=title; b.setAttribute("aria-label",title); b.appendChild($ico(icon)); b.addEventListener("click",handler); return b; };
 
-    // ✓ checkbox semplice per completare / riaprire
     const chk = document.createElement("input");
     chk.type = "checkbox";
     chk.checked = !!t.done;
-    chk.title = t.done ? "Segna come incompleta" : "Completa";
     chk.addEventListener("change", async ()=>{
       await DB.toggleTask(t.id, chk.checked);
       refreshTodos();
     });
 
     const edit = mkBtn("Modifica","edit", async ()=>{
-      const newDescRaw = prompt("Modifica descrizione:", t.description ?? "");
+      const newDescRaw = prompt("Modifica:", t.description ?? "");
       if (newDescRaw === null) return;
       const newDesc = String(newDescRaw).trim();
       let newPrioRaw = prompt('Priorità (very-high, high, normal, low):', t.priority ?? "normal");
@@ -388,14 +700,20 @@ async function refreshTodos(){
     });
 
     const arch = mkBtn(t.archived?"Ripristina":"Archivia", t.archived?"undo":"archive", async()=>{ if(t.archived) await DB.unarchiveTask(t.id); else await DB.archiveTask(t.id); refreshTodos(); });
-    const del  = mkBtn("Elimina","trash", async()=>{ if (confirm("Eliminare questa attività?")){ await DB.deleteTask(t.id); refreshTodos(); } });
+    const del  = mkBtn("Elimina","trash", async()=>{ if (confirm("Eliminare?")){ await DB.deleteTask(t.id); refreshTodos(); } });
 
     right.append(chk, edit, arch, del);
     li.append(left,right); list.appendChild(li);
   }
 }
 
-/* ===== Analisi ===== */
+async function archiveDoneTodos(){
+  const items = await DB.listTasks(state.username,true);
+  for (const t of items){ if (t.done && !t.archived) await DB.archiveTask(t.id); }
+  refreshTodos();
+}
+
+/* ===== ANALISI ===== */
 function onRangeChange(){
   const v = document.getElementById("range").value;
   const from = document.getElementById("date-from");
@@ -442,62 +760,83 @@ async function renderAnalytics(){
   const toUTC0 = (d)=>new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
   start = toUTC0(start); end = toUTC0(end);
 
+  const stats = await DB.getMovementStats(state.username, start, end);
+  const mostUsed = await DB.getMostUsedMaterial(state.username);
+
+  // Update stats
+  document.getElementById("stat-entrata").textContent = formatCurrency(stats.totalSales);
+  document.getElementById("stat-uscita").textContent = formatCurrency(stats.totalExpenses);
+  document.getElementById("stat-saldo").textContent = formatCurrency(stats.totalSales - stats.totalExpenses);
+  
+  document.getElementById("stat-bobine").textContent = stats.countPurchases;
+  document.getElementById("stat-materiale").textContent = formatCurrency(stats.totalSales > 0 ? stats.totalMaterialCost : stats.totalPurchases);
+  document.getElementById("stat-spedizione").textContent = formatCurrency(stats.totalShipping);
+  document.getElementById("stat-totale-filamento").textContent = formatCurrency(stats.totalPurchases + stats.totalShipping);
+  
+  document.getElementById("stat-stampe").textContent = stats.totalPrints;
+  document.getElementById("stat-grammi-usati").textContent = formatGrams(stats.totalGramsUsed);
+  
+  document.getElementById("stat-profitto").textContent = formatCurrency(stats.profit);
+  document.getElementById("stat-profitto").style.color = stats.profit >= 0 ? 'var(--success)' : 'var(--danger)';
+  
+  document.getElementById("stat-materiale-piu-usato").textContent = mostUsed.material.name;
+  document.getElementById("stat-marca-piu-usata").textContent = mostUsed.brand.name;
+
+  // Prepare chart data
   const data = rows.map(r=>({...r, d:new Date(r.date)}))
                    .filter(r=> r.d >= start && r.d <= new Date(end.getTime()+86400000-1))
                    .sort((a,b)=>a.d-b.d);
 
-  const byDay = new Map();
+  const byDay = { sales: {}, expenses: {}, purchases: {} };
   for (const r of data){
     const key = toUTC0(r.d).toISOString();
-    byDay.set(key, (byDay.get(key)||0) + r.amount);
-  }
-  const days = Array.from(byDay.keys()).sort().map(k=>({ x:new Date(k), val: byDay.get(k) }));
-
-  let cum = 0;
-  let points = [];
-  for (const d of days){
-    cum += d.val;
-    points.push({ x:d.x, y:cum });
-  }
-  if (!points.length) points = [{ x:new Date(), y:0 }];
-
-  const MAX_POINTS = 2000;
-  if (points.length > MAX_POINTS){
-    const step = Math.ceil(points.length / MAX_POINTS);
-    const slim = [];
-    for (let i=0;i<points.length;i+=step){ slim.push(points[i]); }
-    if (slim[slim.length-1].x.getTime() !== points[points.length-1].x.getTime()){
-      slim.push(points[points.length-1]);
+    if (r.type === 'sale' || r.amount > 0) {
+      byDay.sales[key] = (byDay.sales[key] || 0) + (r.amount || 0);
+    } else if (r.type === 'expense') {
+      byDay.expenses[key] = (byDay.expenses[key] || 0) + Math.abs(r.amount || 0);
+    } else if (r.type === 'purchase') {
+      byDay.purchases[key] = (byDay.purchases[key] || 0) + Math.abs(r.amount || 0);
     }
-    points = slim;
   }
+  
+  const allDays = [...new Set([...Object.keys(byDay.sales), ...Object.keys(byDay.expenses), ...Object.keys(byDay.purchases)])].sort();
+  
+  const chartData = allDays.map(k => ({
+    date: new Date(k),
+    sales: byDay.sales[k] || 0,
+    expenses: byDay.expenses[k] || 0,
+    purchases: byDay.purchases[k] || 0
+  }));
 
-  drawLineChart(document.getElementById("chart"), points, { step:false });
-
-  const sales = data.filter(r=>r.amount>0);
-  const sum = a=>a.reduce((x,y)=>x+y,0);
-  const totalSales = sum(sales.map(s=>s.amount));
-  const matCost = sum(sales.map(s=>s.materialCost||0));
-  const profit = totalSales - matCost;
-  const tx = data.length, pos = sales.length, neg = data.filter(r=>r.amount<0).length;
-  const f = n=>new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(n);
-
-  let slope=0; if (points.length>=2){
-    let sx=0,sy=0,sxx=0,sxy=0; for (let i=0;i<points.length;i++){ const x=i,y=points[i].y; sx+=x; sy+=y; sxx+=x*x; sxy+=x*y; }
-    slope = (points.length*sxy - sx*sy) / Math.max(1,(points.length*sxx - sx*sx));
+  // Draw charts
+  if (typeof drawCashFlowChart === 'function') {
+    drawCashFlowChart(document.getElementById("chart-cashflow"), chartData);
   }
-  const trendTxt = slope>0.5 ? "Trend in crescita" : (slope<-0.5 ? "Trend in calo" : "Trend stabile");
-
-  document.getElementById("stats").innerHTML =
-    `<div>Transazioni: ${tx}</div>
-     <div>Entrate: ${pos} · Uscite: ${neg}</div>
-     <div>Vendite: ${f(totalSales)}</div>
-     <div>Costo materiale: ${f(matCost)}</div>
-     <div>Utile stimato: ${f(profit)}</div>`;
-  document.getElementById("trend").textContent = trendTxt;
+  if (typeof drawProfitChart === 'function') {
+    drawProfitChart(document.getElementById("chart-profit"), chartData, stats.totalMaterialCost);
+  }
 }
 
-/* ===== Recovery opzionale ===== */
+/* ===== EXPORT/IMPORT ===== */
+async function onExport(){
+  const data = await DB.exportAll(state.username);
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement("a"), {href:url, download:`marketspace_${state.username}_${new Date().toISOString().slice(0,10)}.json`});
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+async function onImport(file){
+  if(!file) return;
+  try{
+    const ok = await DB.importAll(state.username, JSON.parse(await file.text()));
+    if (!ok) return alert("File non valido.");
+    await refreshMovements(); await refreshTodos(); 
+    await refreshSpools(); await refreshSpoolStats();
+    if(state.currentPage==="page-analisi") renderAnalytics();
+  }catch{ alert("Errore nel parsing."); }
+}
+
+/* ===== RECOVERY ===== */
 async function recoverUnarchiveAll(){
   const [movs, tasks] = await Promise.all([
     DB.listMovements(state.username,"all",true),
@@ -505,4 +844,16 @@ async function recoverUnarchiveAll(){
   ]);
   for (const m of movs){ if (m.archived) await DB.unarchiveMovement(m.id); }
   for (const t of tasks){ if (t.archived) await DB.unarchiveTask(t.id); }
+}
+
+/* ===== HELPERS ===== */
+function formatCurrency(amount){
+  return new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(amount || 0);
+}
+
+function formatGrams(grams){
+  if (grams >= 1000) {
+    return (grams / 1000).toFixed(2) + "kg";
+  }
+  return grams + "g";
 }

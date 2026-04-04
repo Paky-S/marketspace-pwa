@@ -166,12 +166,13 @@ function bindEvents(){
   // Settings
   const dlg = $("dlg-settings");
   on($("btn-settings"),"click",()=>{
-    $("set-palette").value = state.palette || "blue";
     $("set-theme").value = state.theme || "system";
     dlg.showModal();
   });
-  on($("set-palette"),"change",(e)=>applyPalette(e.target.value));
   on($("set-theme"),"change",(e)=>applyTheme(e.target.value));
+  on($("btn-export"),"click", onExport);
+  on($("file-import"),"change", e=>onImport(e.target.files[0]));
+  on($("btn-clear-all"),"click", onClearAll);
 
   // Sale form
   on($("form-sale"),"submit", onAddSale);
@@ -187,8 +188,6 @@ function bindEvents(){
   // Movements list
   on($("mov-filter"),"change", refreshMovements);
   on($("mov-show-arch"),"change", e=>{ DB.setMeta("mov_show_arch", e.target.checked); refreshMovements(); });
-  on($("btn-export"),"click", onExport);
-  on($("file-import"),"change", e=>onImport(e.target.files[0]));
 
   // Warehouse
   on($("btn-add-spool"),"click", onAddSpoolManual);
@@ -220,9 +219,16 @@ function switchPage(id){
 }
 
 function switchFormTab(tabName){
+  const tab = document.querySelector(`.form-tab[data-tab="${tabName}"]`);
+  const isAlreadyActive = tab.classList.contains("active");
+  const formOpen = !!document.querySelector(".mov-form.active");
+
   document.querySelectorAll(".form-tab").forEach(t=>t.classList.remove("active"));
-  document.querySelector(`.form-tab[data-tab="${tabName}"]`).classList.add("active");
   document.querySelectorAll(".mov-form").forEach(f=>f.classList.remove("active"));
+
+  if (isAlreadyActive && formOpen) return; // stesso tab → chiudi
+
+  tab.classList.add("active");
   document.getElementById(`form-${tabName}`).classList.add("active");
 }
 
@@ -834,6 +840,16 @@ async function onImport(file){
     await refreshSpools(); await refreshSpoolStats();
     if(state.currentPage==="page-analisi") renderAnalytics();
   }catch{ alert("Errore nel parsing."); }
+}
+
+async function onClearAll(){
+  if (!confirm("Sei sicuro di voler cancellare TUTTI i dati?\nQuesta operazione non può essere annullata.")) return;
+  if (!confirm("Conferma: eliminare movimenti, task e bobine?")) return;
+  await DB.clearAll();
+  await refreshMovements(); await refreshTodos();
+  await refreshSpools(); await refreshSpoolStats();
+  if(state.currentPage==="page-analisi") renderAnalytics();
+  $("dlg-settings").close();
 }
 
 /* ===== RECOVERY ===== */

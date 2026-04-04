@@ -38,13 +38,13 @@
           <div class="card form-card">
             <!-- Tab selector -->
             <div class="form-tabs">
-              <button type="button" class="form-tab active" data-tab="sale">💰 Vendita</button>
+              <button type="button" class="form-tab" data-tab="sale">💰 Vendita</button>
               <button type="button" class="form-tab" data-tab="expense">💸 Spesa</button>
               <button type="button" class="form-tab" data-tab="purchase">📦 Acquisto</button>
             </div>
             
             <!-- TAB VENDITA -->
-            <form id="form-sale" class="mov-form active">
+            <form id="form-sale" class="mov-form">
               <div class="form-section">
                 <h3 class="form-section-title">Dati Vendita</h3>
                 
@@ -90,8 +90,6 @@
               
               <div class="row actions">
                 <button type="submit" class="btn primary" id="btn-sale-submit">Registra Vendita</button>
-                <button type="button" id="btn-export" class="btn">Esporta</button>
-                <label class="btn file">Importa <input id="file-import" type="file" accept=".json" hidden></label>
               </div>
             </form>
             
@@ -215,7 +213,7 @@
 
         <!-- TO-DO -->
         <section id="page-todo" class="page" aria-label="To-Do">
-          <form id="todo-form" class="card form-card">
+          <form id="todo-form" class="card form">
             <div class="row">
               <label for="todo-desc">Attività</label>
               <input id="todo-desc" type="text" maxlength="140" placeholder="es. Chiamare cliente..." required>
@@ -401,17 +399,18 @@
           </select>
         </div>
 
-        <div class="row">
-          <label for="set-palette">Palette colori</label>
-          <select id="set-palette">
-            <option value="blue">Blu</option>
-            <option value="red">Rosso</option>
-            <option value="green">Verde</option>
-            <option value="purple">Viola</option>
-          </select>
+
+        <hr style="margin:12px 0;">
+        <h3 style="margin:0 0 8px;font-size:.95rem;">Gestione Dati</h3>
+        <div class="row actions">
+          <button type="button" id="btn-export" class="btn">&#8679; Esporta backup</button>
+          <label class="btn file">&#8681; Importa backup <input id="file-import" type="file" accept=".json" hidden></label>
+        </div>
+        <div class="row actions" style="margin-top:8px;">
+          <button type="button" id="btn-clear-all" class="btn primary danger">&#128465; Cancella tutti i dati</button>
         </div>
 
-        <div class="row actions" style="justify-content:flex-end;">
+        <div class="row actions" style="justify-content:flex-end;margin-top:12px;">
           <button value="cancel" class="btn">Chiudi</button>
         </div>
       </form>

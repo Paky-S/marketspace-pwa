@@ -365,14 +365,15 @@ const DB = (()=>{
     rM.onsuccess=()=>{ rM.result.forEach(k=>stM.delete(k)); };
     rT.onsuccess=()=>{ rT.result.forEach(k=>stT.delete(k)); };
   }); }
+  function clearAll(){ return new Promise((res,rej)=>{ const tx=_db.transaction(["movements","tasks","spools"],"readwrite"); tx.objectStore("movements").clear(); tx.objectStore("tasks").clear(); tx.objectStore("spools").clear(); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
   async function sha256(text){ const enc=new TextEncoder().encode(text); const hash = await crypto.subtle.digest("SHA-256", enc); return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,"0")).join(""); }
 
-  return { 
+  return {
     open, MATERIALS, GRAM_OPTIONS,
     addMovement, listMovements, getMovementStats, getMostUsedMaterial,
     editMovement, deleteMovement, archiveMovement, unarchiveMovement,
     addTask, listTasks, toggleTask, editTask, deleteTask, archiveTask, unarchiveTask,
     addSpool, addMultipleSpools, listSpools, getSpoolStats, getSpool, addSpoolStock, consumeSpool, editSpool, archiveSpool, unarchiveSpool,
-    setMeta, getMeta, exportAll, importAll 
+    setMeta, getMeta, exportAll, importAll, clearAll
   };
 })();

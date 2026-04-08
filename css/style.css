@@ -737,6 +737,13 @@ input[type="checkbox"] {
   padding: 16px;
 }
 
+.chart-note {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 4px 0 14px;
+  line-height: 1.5;
+}
+
 .chart-title, .section-title {
   font-size: 1rem;
   font-weight: 600;

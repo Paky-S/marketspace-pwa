@@ -76,15 +76,11 @@
               
               <div class="form-section">
                 <h3 class="form-section-title">Materiale Usato (opzionale)</h3>
-                
-                <div class="row">
-                  <label for="sale-spool">Filamento</label>
-                  <select id="sale-spool"><option value="">— nessuno —</option></select>
-                </div>
-                
-                <div class="row" id="sale-row-grams" hidden>
-                  <label for="sale-grams">Grammi usati</label>
-                  <input id="sale-grams" inputmode="numeric" type="number" step="1" min="1" placeholder="es. 95">
+                <div id="filament-rows"></div>
+                <button type="button" id="btn-add-filament" class="btn-add-row">+ Aggiungi filamento</button>
+                <div id="filament-total" hidden>
+                  <span>Costo materiale:</span>
+                  <strong id="filament-total-value"></strong>
                 </div>
               </div>
               

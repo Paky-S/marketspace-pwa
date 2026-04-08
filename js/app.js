@@ -1,4 +1,6 @@
-// MarketSpace v1.4 - Nuova versione con form a tab
+// MarketSpace v1.5 - Nuova versione con form a tab
+let _spoolsCache = [];
+
 const state = {
   version: "0.0.0",
   username: "default",
@@ -185,7 +187,7 @@ function bindEvents(){
 
   // Sale form
   on($("form-sale"),"submit", onAddSale);
-  on($("sale-spool"),"change", onSaleSpoolChange);
+  on($("btn-add-filament"),"click", addFilamentRow);
   
   // Expense form
   on($("form-expense"),"submit", onAddExpense);
@@ -241,13 +243,91 @@ function switchFormTab(tabName){
   document.getElementById(`form-${tabName}`).classList.add("active");
 }
 
-/* ===== SALE FORM ===== */
-function onSaleSpoolChange(){
-  const sel = document.getElementById("sale-spool");
-  const row = document.getElementById("sale-row-grams");
-  if (row) row.hidden = !(sel && sel.value);
+/* ===== FILAMENT ROWS ===== */
+function buildSpoolOptions(spools){
+  return '<option value="">— nessuno —</option>' +
+    spools.map(s=>`<option value="${s.id}">${s.name||s.material}${s.brand?' - '+s.brand:''} • ${s.grams_available}g • €${Number(s.price_per_kg).toFixed(2)}/kg</option>`).join("");
 }
 
+function createFilamentRow(){
+  const div = document.createElement("div");
+  div.className = "filament-row";
+  div.innerHTML = `
+    <div class="filament-row-main">
+      <select class="filament-spool">${buildSpoolOptions(_spoolsCache)}</select>
+      <button type="button" class="btn-filament-remove" title="Rimuovi">−</button>
+    </div>
+    <div class="filament-details" hidden>
+      <input class="filament-grams" type="number" step="1" min="1" placeholder="grammi usati" inputmode="numeric">
+      <span class="filament-cost-display"></span>
+    </div>`;
+  div.querySelector(".filament-spool").addEventListener("change", ()=>onFilamentRowChange(div));
+  div.querySelector(".filament-grams").addEventListener("input", ()=>updateFilamentRowCost(div));
+  div.querySelector(".btn-filament-remove").addEventListener("click", ()=>removeFilamentRow(div));
+  return div;
+}
+
+function addFilamentRow(){
+  const container = document.getElementById("filament-rows");
+  if (!container || container.children.length >= 6) return;
+  container.appendChild(createFilamentRow());
+  syncFilamentUI();
+}
+
+function removeFilamentRow(row){
+  row.remove();
+  updateFilamentTotal();
+  syncFilamentUI();
+}
+
+function syncFilamentUI(){
+  const rows = document.querySelectorAll(".filament-row");
+  const addBtn = document.getElementById("btn-add-filament");
+  if (addBtn) addBtn.hidden = rows.length >= 6;
+  rows.forEach((r, i) => {
+    r.querySelector(".btn-filament-remove").hidden = rows.length === 1 && i === 0;
+  });
+}
+
+function onFilamentRowChange(row){
+  const sel = row.querySelector(".filament-spool");
+  const details = row.querySelector(".filament-details");
+  details.hidden = !sel.value;
+  if (!sel.value){
+    row.querySelector(".filament-grams").value = "";
+    row.querySelector(".filament-cost-display").textContent = "";
+  }
+  updateFilamentTotal();
+}
+
+function updateFilamentRowCost(row){
+  const spoolId = Number(row.querySelector(".filament-spool").value);
+  const grams = Number(row.querySelector(".filament-grams").value);
+  const display = row.querySelector(".filament-cost-display");
+  const spool = _spoolsCache.find(s=>s.id===spoolId);
+  if (spool && grams > 0){
+    display.textContent = "= " + formatCurrency(spool.price_per_kg*(grams/1000));
+  } else {
+    display.textContent = "";
+  }
+  updateFilamentTotal();
+}
+
+function updateFilamentTotal(){
+  let total = 0, count = 0;
+  document.querySelectorAll(".filament-row").forEach(row=>{
+    const spoolId = Number(row.querySelector(".filament-spool").value);
+    const grams = Number(row.querySelector(".filament-grams").value);
+    const spool = _spoolsCache.find(s=>s.id===spoolId);
+    if (spool && grams > 0){ total += spool.price_per_kg*(grams/1000); count++; }
+  });
+  const totalDiv = document.getElementById("filament-total");
+  const totalVal = document.getElementById("filament-total-value");
+  if (totalDiv) totalDiv.hidden = count === 0;
+  if (totalVal && count > 0) totalVal.textContent = formatCurrency(total);
+}
+
+/* ===== SALE FORM ===== */
 async function onAddSale(ev){
   ev.preventDefault();
 
@@ -264,18 +344,22 @@ async function onAddSale(ev){
   const d = dInp && dInp.value ? new Date(dInp.value) : new Date();
   const iso = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
 
-  let spoolId = document.getElementById("sale-spool")?.value || null;
-  let gramsUsed = 0, materialCost = 0;
-
-  if (spoolId){
-    gramsUsed = Number(document.getElementById("sale-grams").value);
-    if (!Number.isFinite(gramsUsed) || gramsUsed<=0) return alert("Inserisci i grammi usati.");
-    const s = await DB.getSpool(Number(spoolId));
+  // Raccolta dati filamenti
+  const filaments = [];
+  let totalMaterialCost = 0;
+  for (const row of document.querySelectorAll(".filament-row")){
+    const spoolId = Number(row.querySelector(".filament-spool").value)||null;
+    if (!spoolId) continue;
+    const grams = Number(row.querySelector(".filament-grams").value);
+    if (!grams || grams<=0) return alert("Inserisci i grammi usati per ogni filamento selezionato.");
+    const s = _spoolsCache.find(s=>s.id===spoolId);
     if (!s) return alert("Bobina non trovata.");
-    if (s.grams_available < gramsUsed) return alert("Grammatura insufficiente.");
-    materialCost = s.price_per_kg * (gramsUsed/1000);
-    await DB.consumeSpool(s.id, gramsUsed);
+    if (s.grams_available < grams) return alert(`Grammatura insufficiente per ${s.name||s.material}.`);
+    filaments.push({spoolId, gramsUsed:grams, cost: s.price_per_kg*(grams/1000)});
+    totalMaterialCost += s.price_per_kg*(grams/1000);
   }
+  for (const f of filaments) await DB.consumeSpool(f.spoolId, f.gramsUsed);
+  const primary = filaments[0] || null;
 
   await DB.addMovement({
     username:state.username,
@@ -286,9 +370,10 @@ async function onAddSale(ev){
     customer,
     date:iso,
     archived:false,
-    spoolId, 
-    gramsUsed, 
-    materialCost
+    spoolId: primary?.spoolId||null,
+    gramsUsed: primary?.gramsUsed||0,
+    materialCost: totalMaterialCost,
+    filaments,
   });
 
   // Reset form
@@ -296,10 +381,11 @@ async function onAddSale(ev){
   document.getElementById("sale-item").value = "";
   document.getElementById("sale-desc").value = "";
   document.getElementById("sale-customer").value = "";
-  document.getElementById("sale-grams").value = "";
-  document.getElementById("sale-spool").value = "";
   document.getElementById("sale-date").valueAsDate = new Date();
-  onSaleSpoolChange();
+  document.getElementById("filament-rows").innerHTML = "";
+  addFilamentRow();
+  const ft = document.getElementById("filament-total");
+  if (ft) ft.hidden = true;
 
   await refreshMovements();
   if (state.currentPage==="page-analisi") renderAnalytics();
@@ -583,13 +669,16 @@ async function refreshMovements(){
     li.append(left, right); list.appendChild(li);
   }
 
-  // Aggiorna select spool per vendite
-  const sel = document.getElementById("sale-spool");
+  // Aggiorna cache e select filamenti nella form vendita
   const spools = await DB.listSpools();
-  sel.innerHTML = '<option value="">— nessuno —</option>' + spools.map(s=>{
-    const colorBox = `<span class="spool-color" style="background:${s.color || '#888'}"></span>`;
-    return `<option value="${s.id}">${colorBox} ${s.name || s.material} ${s.brand ? '- ' + s.brand : ''} • ${s.grams_available}g</option>`;
-  }).join("");
+  _spoolsCache = spools;
+  const opts = buildSpoolOptions(spools);
+  document.querySelectorAll(".filament-spool").forEach(sel=>{
+    const prev = sel.value;
+    sel.innerHTML = opts;
+    if (prev) sel.value = prev;
+  });
+  if (!document.querySelector(".filament-row")) addFilamentRow();
 }
 
 /* ===== WAREHOUSE ===== */

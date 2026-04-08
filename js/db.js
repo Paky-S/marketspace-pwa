@@ -139,7 +139,8 @@ const DB = (()=>{
       spoolId: m.spoolId || null,
       gramsUsed: m.gramsUsed || 0,
       materialCost: m.materialCost || 0,
-      shippingCost: m.shippingCost || 0
+      shippingCost: m.shippingCost || 0,
+      filaments: m.filaments || []
     };
     return _put("movements", movement);
   }

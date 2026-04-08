@@ -166,10 +166,19 @@ function bindEvents(){
   // Settings
   const dlg = $("dlg-settings");
   on($("btn-settings"),"click",()=>{
-    $("set-theme").value = state.theme || "system";
+    const cur = state.theme || "system";
+    document.querySelectorAll(".theme-swatch").forEach(s=>{
+      s.classList.toggle("active", s.dataset.theme === cur);
+    });
     dlg.showModal();
   });
-  on($("set-theme"),"change",(e)=>applyTheme(e.target.value));
+  document.querySelectorAll(".theme-swatch").forEach(s=>{
+    s.addEventListener("click",()=>{
+      document.querySelectorAll(".theme-swatch").forEach(x=>x.classList.remove("active"));
+      s.classList.add("active");
+      applyTheme(s.dataset.theme);
+    });
+  });
   on($("btn-export"),"click", onExport);
   on($("file-import"),"change", e=>onImport(e.target.files[0]));
   on($("btn-clear-all"),"click", onClearAll);
@@ -618,7 +627,7 @@ async function refreshSpools(){
     const colorBox = `<span class="spool-color" style="background:${s.color || '#888'}"></span>`;
     left.innerHTML = `
       <div class="item-title">${colorBox} <strong>${s.name || s.material}</strong> ${s.brand ? `- ${s.brand}` : ''}</div>
-      <div class="item-sub">${s.material} • ${s.grams_available}g disponibili • €${s.price_per_kg}/kg</div>
+      <div class="item-sub">${s.material} • ${s.grams_available}g disponibili • €${Number(s.price_per_kg).toFixed(2)}/kg</div>
     `;
     
     const right = document.createElement("div"); 

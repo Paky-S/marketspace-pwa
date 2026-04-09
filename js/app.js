@@ -691,7 +691,10 @@ async function refreshMovements(){
     li.append(left, right); list.appendChild(li);
   }
 
-  // Aggiorna cache e select filamenti nella form vendita
+  await refreshSpoolCache();
+}
+
+async function refreshSpoolCache(){
   const spools = await DB.listSpools();
   _spoolsCache = spools;
   const opts = buildSpoolOptions(spools);
@@ -782,6 +785,7 @@ async function refreshSpools(){
 
     right.append(edit,tog); li.append(left,right); list.appendChild(li);
   }
+  await refreshSpoolCache();
 }
 
 async function refreshSpoolStats(){

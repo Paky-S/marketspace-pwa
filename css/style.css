@@ -4,6 +4,7 @@
 
 /* VARIABILI TEMA - BLU (default) */
 :root {
+  color-scheme: light dark;
   --primary: #007AFF;
   --primary-soft: #5AC8FA;
   --primary-light: rgba(0, 122, 255, 0.1);
@@ -77,20 +78,16 @@
   --primary-light: rgba(10, 132, 255, 0.2);
 }
 
-/* TEMA VERDE */
-:root[data-theme="green"][data-mode="light"] {
-  --primary: #34C759;
-  --primary-soft: #30D158;
-  --primary-light: rgba(52, 199, 89, 0.1);
-  --success: #34C759;
-  --danger: #FF3B30;
+/* TEMA TURCHESE */
+:root[data-theme="teal"][data-mode="light"] {
+  --primary: #0096C7;
+  --primary-soft: #48CAE4;
+  --primary-light: rgba(0, 150, 199, 0.1);
 }
-:root[data-theme="green"][data-mode="dark"] {
-  --primary: #30D158;
-  --primary-soft: #34C759;
-  --primary-light: rgba(48, 209, 88, 0.2);
-  --success: #30D158;
-  --danger: #FF453A;
+:root[data-theme="teal"][data-mode="dark"] {
+  --primary: #48CAE4;
+  --primary-soft: #0096C7;
+  --primary-light: rgba(72, 202, 228, 0.2);
 }
 
 /* TEMA VIOLA */
@@ -298,6 +295,36 @@ main {
   margin: 0 0 12px 0;
 }
 
+/* MULTI-FILAMENT ROWS */
+.filament-details[hidden], .btn-filament-remove[hidden], #filament-total[hidden] { display: none !important; }
+.filament-row { margin-bottom: 8px; }
+.filament-row-main { display: flex; gap: 8px; align-items: center; }
+.filament-row-main select { flex: 1; }
+.btn-filament-remove {
+  flex-shrink: 0; width: 30px; height: 30px;
+  border: 1px solid var(--separator); border-radius: 50%;
+  background: none; color: var(--muted); cursor: pointer;
+  font-size: 1.2rem; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-filament-remove:active { opacity: 0.6; }
+.filament-details { display: flex; gap: 8px; align-items: center; margin-top: 6px; padding-left: 4px; }
+.filament-details input { width: 110px; }
+.filament-cost-display { font-size: .82rem; color: var(--primary); font-weight: 600; }
+.btn-add-row {
+  margin-top: 6px; font-size: .85rem; padding: 7px 12px;
+  background: none; border: 1px dashed var(--separator);
+  color: var(--primary); border-radius: 10px; cursor: pointer; width: 100%;
+}
+.btn-add-row:active { opacity: 0.6; }
+#filament-total {
+  margin-top: 10px; padding: 8px 12px;
+  background: var(--card); border-radius: 10px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: .9rem; color: var(--muted);
+}
+#filament-total strong { color: var(--fg); }
+
 /* FORM ROWS */
 .form .row, .mov-form .row {
   margin-bottom: 16px;
@@ -379,6 +406,47 @@ input::placeholder {
   align-items: center;
   gap: 8px;
   cursor: pointer;
+}
+
+/* THEME PICKER */
+.theme-picker {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.theme-swatch {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  outline: none;
+}
+
+.theme-swatch:hover {
+  transform: scale(1.1);
+}
+
+.theme-swatch.active {
+  border-color: var(--fg);
+  transform: scale(1.12);
+}
+
+.theme-swatch.active::after {
+  content: "✓";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 /* ROW ACTIONS */
@@ -737,6 +805,13 @@ input[type="checkbox"] {
   padding: 16px;
 }
 
+.chart-note {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 4px 0 14px;
+  line-height: 1.5;
+}
+
 .chart-title, .section-title {
   font-size: 1rem;
   font-weight: 600;
@@ -880,6 +955,10 @@ input[type="checkbox"] {
   background: linear-gradient(135deg, var(--primary-light), var(--purple-soft));
 }
 
+[data-theme="purple"] .stats-card {
+  background: linear-gradient(135deg, var(--primary-light), rgba(10, 132, 255, 0.25));
+}
+
 .stats-title {
   font-size: 1rem;
   font-weight: 600;
@@ -934,6 +1013,7 @@ dialog {
   border-radius: var(--radius-lg);
   padding: 0;
   background: transparent;
+  color: var(--fg);
   max-width: 480px;
   width: 90vw;
   margin: auto;

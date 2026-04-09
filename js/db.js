@@ -139,7 +139,8 @@ const DB = (()=>{
       spoolId: m.spoolId || null,
       gramsUsed: m.gramsUsed || 0,
       materialCost: m.materialCost || 0,
-      shippingCost: m.shippingCost || 0
+      shippingCost: m.shippingCost || 0,
+      filaments: m.filaments || []
     };
     return _put("movements", movement);
   }
@@ -283,7 +284,7 @@ const DB = (()=>{
     const shippingPerSpool = spoolsData.length > 0 ? shippingCost / spoolsData.length : 0;
     
     for (const data of spoolsData) {
-      const costPerKg = (Number(data.cost) + shippingPerSpool) / (Number(data.grams) / 1000);
+      const costPerKg = Math.round(((Number(data.cost) + shippingPerSpool) / (Number(data.grams) / 1000)) * 100) / 100;
       const id = await addSpool({
         name: data.material + " " + data.colorName,
         material: data.material,

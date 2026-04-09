@@ -183,8 +183,6 @@ function bindEvents(){
   });
   on($("btn-export"),"click", onExport);
   on($("file-import"),"change", e=>onImport(e.target.files[0]));
-  on($("btn-clear-all"),"click", onClearAll);
-
   // Sale form
   on($("form-sale"),"submit", onAddSale);
   on($("btn-add-filament"),"click", addFilamentRow);
@@ -428,38 +426,35 @@ async function onAddExpense(ev){
 
 /* ===== PURCHASE FORM ===== */
 function initPurchaseSpoolSelector(){
-  const container = document.getElementById("purchase-spools-container");
-  document.querySelectorAll(".spool-count-btn").forEach(btn=>{
-    btn.addEventListener("click",()=>{
-      document.querySelectorAll(".spool-count-btn").forEach(b=>b.classList.remove("selected"));
-      btn.classList.add("selected");
-      state.purchaseSpoolCount = parseInt(btn.dataset.count);
-      renderPurchaseSpools();
-    });
+  const display = document.getElementById("spool-count-display");
+  document.getElementById("spool-count-minus").addEventListener("click", ()=>{
+    if (state.purchaseSpoolCount > 1){ state.purchaseSpoolCount--; display.textContent = state.purchaseSpoolCount; renderPurchaseSpools(); }
   });
-  // Select first by default
-  document.querySelector(".spool-count-btn[data-count='1']")?.classList.add("selected");
+  document.getElementById("spool-count-plus").addEventListener("click", ()=>{
+    if (state.purchaseSpoolCount < 20){ state.purchaseSpoolCount++; display.textContent = state.purchaseSpoolCount; renderPurchaseSpools(); }
+  });
   renderPurchaseSpools();
 }
 
 function renderPurchaseSpools(){
   const container = document.getElementById("purchase-spools-container");
   container.innerHTML = '';
-  
+
   for (let i = 0; i < state.purchaseSpoolCount; i++) {
     const item = document.createElement('div');
     item.className = 'purchase-spool-item';
     item.innerHTML = `
-      <h4>Bobina ${i + 1}</h4>
+      <div class="purchase-spool-header">Bobina ${i + 1}</div>
       <div class="row">
         <label>Materiale</label>
         <select class="purchase-material" id="pur-material-${i}">
           ${DB.MATERIALS.map(m=>`<option value="${m}">${m}</option>`).join('')}
         </select>
+        <input type="text" class="purchase-material-custom" id="pur-material-custom-${i}" placeholder="Inserisci materiale..." style="display:none;margin-top:6px;">
       </div>
       <div class="row">
         <label>Marca</label>
-        <input type="text" class="purchase-brand" id="pur-brand-${i}" placeholder="es. Esun, Hatchbox...">
+        <input type="text" class="purchase-brand" id="pur-brand-${i}" placeholder="es. Bambulab, Sunlu, eSun, Hatchbox...">
       </div>
       <div class="row">
         <label>Colore</label>
@@ -473,7 +468,7 @@ function renderPurchaseSpools(){
       <div class="row">
         <label>Grammi</label>
         <select class="purchase-grams" id="pur-grams-${i}">
-          ${DB.GRAM_OPTIONS.map(g=>`<option value="${g}">${g}g</option>`).join('')}
+          ${DB.GRAM_OPTIONS.map(g=>`<option value="${g}" ${g===1000?'selected':''}>${g}g</option>`).join('')}
         </select>
       </div>
       <div class="row">
@@ -482,8 +477,15 @@ function renderPurchaseSpools(){
       </div>
     `;
     container.appendChild(item);
-    
-    // Add color picker events
+
+    // Mostra input custom se ALTRO selezionato
+    const matSel = item.querySelector(`#pur-material-${i}`);
+    const matCustom = item.querySelector(`#pur-material-custom-${i}`);
+    matSel.addEventListener('change', ()=>{
+      matCustom.style.display = matSel.value === 'ALTRO' ? 'block' : 'none';
+    });
+
+    // Color picker events
     item.querySelectorAll('.color-option').forEach(opt => {
       opt.addEventListener('click', () => {
         item.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
@@ -491,8 +493,7 @@ function renderPurchaseSpools(){
       });
     });
   }
-  
-  // Add change listeners to update total
+
   container.addEventListener('input', updatePurchaseTotal);
   container.addEventListener('change', updatePurchaseTotal);
 }
@@ -519,7 +520,8 @@ async function onAddPurchase(ev){
   const spoolsData = [];
   
   for (let i = 0; i < state.purchaseSpoolCount; i++) {
-    const material = document.getElementById(`pur-material-${i}`)?.value || "PLA";
+    let material = document.getElementById(`pur-material-${i}`)?.value || "PLA";
+    if (material === 'ALTRO') material = String(document.getElementById(`pur-material-custom-${i}`)?.value||"").trim() || "Altro";
     const brand = String(document.getElementById(`pur-brand-${i}`)?.value || "").trim();
     const grams = Number(document.getElementById(`pur-grams-${i}`)?.value) || 1000;
     const cost = Number(String(document.getElementById(`pur-cost-${i}`)?.value || "0").replace(",",".")) || 0;
@@ -561,16 +563,10 @@ async function onAddPurchase(ev){
   document.getElementById("purchase-shipping").value = "0";
   document.getElementById("purchase-date").valueAsDate = new Date();
   state.purchaseSpoolCount = 1;
-  document.querySelectorAll(".spool-count-btn").forEach(b=>b.classList.remove("selected"));
-  document.querySelector(".spool-count-btn[data-count='1']")?.classList.add("selected");
+  const spoolDisplay = document.getElementById("spool-count-display");
+  if (spoolDisplay) spoolDisplay.textContent = "1";
   renderPurchaseSpools();
   updatePurchaseTotal();
-  
-  // Clear costs
-  for (let i = 0; i < 6; i++) {
-    const costEl = document.getElementById(`pur-cost-${i}`);
-    if (costEl) costEl.value = "";
-  }
   
   await refreshMovements();
   await refreshSpools();
@@ -588,7 +584,7 @@ async function refreshMovements(){
   let saldo = 0;
   for (const m of rows) if (!m.archived && m.type !== 'purchase') saldo += m.amount;
   
-  document.getElementById("saldo").innerHTML = `<span>Saldo:</span> <strong>${formatCurrency(saldo)}</strong>`;
+  document.getElementById("saldo").innerHTML = `<strong>${formatCurrency(saldo)}</strong>`;
 
   for (const m of rows){
     const li = document.createElement("li"); 
@@ -610,17 +606,43 @@ async function refreshMovements(){
       mainInfo = `<div class="item-title"><strong>${m.itemName || 'Acquisto materiale'}</strong></div>`;
     }
     
-    let extra = "";
-    if (m.type === 'sale' && m.spoolId && m.gramsUsed){
-      extra = `<div class="item-meta">Filamento: #${m.spoolId} • ${m.gramsUsed}g • Costo: ${formatCurrency(m.materialCost || 0)}</div>`;
+    // Filament summary + expand panel
+    const filamentList = (m.filaments && m.filaments.length > 0)
+      ? m.filaments
+      : (m.spoolId && m.gramsUsed ? [{spoolId: m.spoolId, gramsUsed: m.gramsUsed, cost: m.materialCost}] : []);
+    const hasFilaments = m.type === 'sale' && filamentList.length > 0;
+
+    let filamentSummary = "";
+    let filamentPanel = "";
+    if (hasFilaments) {
+      if (filamentList.length === 1) {
+        const sp = _spoolsCache.find(s=>s.id===filamentList[0].spoolId);
+        filamentSummary = `<div class="item-meta">🧵 ${sp ? sp.name||sp.material : '#'+filamentList[0].spoolId} • ${filamentList[0].gramsUsed}g • ${formatCurrency(filamentList[0].cost||0)}</div>`;
+      } else {
+        const tg = filamentList.reduce((s,f)=>s+(f.gramsUsed||0),0);
+        filamentSummary = `<div class="item-meta">🧵 ${filamentList.length} filamenti • ${tg}g • ${formatCurrency(m.materialCost||0)} — <span class="expand-hint">tocca per dettagli</span></div>`;
+      }
+      const detailRows = filamentList.map(f=>{
+        const sp = _spoolsCache.find(s=>s.id===f.spoolId);
+        return `<div class="fdl-row"><span class="fdl-name">${sp ? sp.name||sp.material : '#'+f.spoolId}</span><span class="fdl-grams">${f.gramsUsed}g</span><span class="fdl-cost">${formatCurrency(f.cost||0)}</span></div>`;
+      }).join('');
+      filamentPanel = `<div class="filament-detail-panel"><div class="fdl-list">${detailRows}</div><p class="fdl-note">⚠️ Modificare i materiali non aggiorna il magazzino bobine.</p><button type="button" class="btn-edit-filaments">✏️ Modifica materiali</button></div>`;
     }
-    
+
     left.innerHTML = `
       ${typeBadge}
       ${mainInfo}
       <div class="item-sub">${m.description || ''} • ${dateStr}</div>
-      ${extra}
+      ${filamentSummary}
+      ${filamentPanel}
     `;
+
+    if (hasFilaments) {
+      li.classList.add("expandable");
+      left.addEventListener("click", (e)=>{ if (!e.target.closest("button")) li.classList.toggle("expanded"); });
+      const btnEF = left.querySelector(".btn-edit-filaments");
+      if (btnEF) btnEF.addEventListener("click", (e)=>{ e.stopPropagation(); showFilamentEditor(li, m); });
+    }
 
     const right = document.createElement("div"); 
     right.className="item-actions";
@@ -681,26 +703,42 @@ async function refreshMovements(){
   if (!document.querySelector(".filament-row")) addFilamentRow();
 }
 
+/* ===== FILAMENT EDITOR ===== */
+function showFilamentEditor(li, m){
+  const panel = li.querySelector(".filament-detail-panel");
+  if (!panel) return;
+  const filamentList = (m.filaments && m.filaments.length > 0)
+    ? m.filaments
+    : (m.spoolId && m.gramsUsed ? [{spoolId: m.spoolId, gramsUsed: m.gramsUsed, cost: m.materialCost}] : []);
+  const spoolOpts = _spoolsCache.map(s=>`<option value="${s.id}">${s.name||s.material}${s.brand?' - '+s.brand:''} • ${s.grams_available}g</option>`).join('');
+  const rows = filamentList.map((f,idx)=>`
+    <div class="feditor-row">
+      <select class="feditor-spool" data-idx="${idx}"><option value="">— nessuno —</option>${spoolOpts}</select>
+      <input class="feditor-grams" type="number" step="1" min="1" value="${f.gramsUsed||''}" placeholder="g" data-idx="${idx}">
+    </div>`).join('');
+  panel.innerHTML = `<div class="filament-editor">${rows}<p class="fdl-note">⚠️ Modificare i materiali non aggiorna il magazzino bobine.</p><div class="feditor-actions"><button type="button" class="btn-feditor-save">Salva</button><button type="button" class="btn-feditor-cancel">Annulla</button></div></div>`;
+  filamentList.forEach((f,idx)=>{ const s=panel.querySelector(`.feditor-spool[data-idx="${idx}"]`); if(s&&f.spoolId) s.value=String(f.spoolId); });
+  panel.querySelector(".btn-feditor-cancel").addEventListener("click",(e)=>{ e.stopPropagation(); refreshMovements(); });
+  panel.querySelector(".btn-feditor-save").addEventListener("click", async(e)=>{
+    e.stopPropagation();
+    const newFilaments = filamentList.map((_,idx)=>{
+      const spoolId = Number(panel.querySelector(`.feditor-spool[data-idx="${idx}"]`)?.value)||null;
+      const gramsUsed = Number(panel.querySelector(`.feditor-grams[data-idx="${idx}"]`)?.value)||0;
+      const sp = _spoolsCache.find(s=>s.id===spoolId);
+      return {spoolId, gramsUsed, cost: sp ? sp.price_per_kg*(gramsUsed/1000) : 0};
+    }).filter(f=>f.spoolId && f.gramsUsed>0);
+    const totalMaterialCost = newFilaments.reduce((s,f)=>s+f.cost,0);
+    const primary = newFilaments[0]||null;
+    await DB.editMovement(m.id,{filaments:newFilaments, spoolId:primary?.spoolId||null, gramsUsed:primary?.gramsUsed||0, materialCost:totalMaterialCost});
+    await refreshMovements();
+    if(state.currentPage==="page-analisi") renderAnalytics();
+  });
+}
+
 /* ===== WAREHOUSE ===== */
-async function onAddSpoolManual(){
-  const name = (prompt("Nome/descrizione bobina:")||"").trim(); if (!name) return;
-  const material = prompt("Materiale (PLA, PETG, ABS, TPU...):", "PLA") || "PLA";
-  const brand = (prompt("Marca:")||"").trim();
-  const grams = Number(prompt("Grammi disponibili:","1000")); if (!Number.isFinite(grams)||grams<0) return alert("Grammatura non valida.");
-  const price = Number(prompt("Prezzo €/kg:","20")); if (!Number.isFinite(price)||price<=0) return alert("Prezzo non valido.");
-  
-  // Pick color
-  const colorNames = COLORS.map(c=>c.name).join(", ");
-  let colorHex = "#888888";
-  const colorName = prompt(`Colore (${colorNames}):`, "Nero");
-  if (colorName) {
-    const found = COLORS.find(c=>c.name.toLowerCase() === colorName.toLowerCase());
-    if (found) colorHex = found.hex;
-  }
-  
-  await DB.addSpool({name, material, brand, color: colorHex, grams_total: grams, grams_available: grams, price_per_kg: price, archived:false});
-  refreshSpools();
-  refreshSpoolStats();
+function onAddSpoolManual(){
+  switchPage("page-movimenti");
+  switchFormTab("purchase");
 }
 
 async function refreshSpools(){
@@ -873,7 +911,7 @@ async function renderAnalytics(){
   document.getElementById("stat-saldo").textContent = formatCurrency(stats.totalSales - stats.totalExpenses);
   
   document.getElementById("stat-bobine").textContent = stats.countPurchases;
-  document.getElementById("stat-materiale").textContent = formatCurrency(stats.totalSales > 0 ? stats.totalMaterialCost : stats.totalPurchases);
+  document.getElementById("stat-materiale").textContent = formatCurrency(stats.totalMaterialCost);
   document.getElementById("stat-spedizione").textContent = formatCurrency(stats.totalShipping);
   document.getElementById("stat-totale-filamento").textContent = formatCurrency(stats.totalPurchases + stats.totalShipping);
   
@@ -891,25 +929,27 @@ async function renderAnalytics(){
                    .filter(r=> r.d >= start && r.d <= new Date(end.getTime()+86400000-1))
                    .sort((a,b)=>a.d-b.d);
 
-  const byDay = { sales: {}, expenses: {}, purchases: {} };
+  const byDay = { sales: {}, expenses: {}, purchases: {}, materialCost: {} };
   for (const r of data){
     const key = toUTC0(r.d).toISOString();
     if (r.type === 'sale' || r.amount > 0) {
       byDay.sales[key] = (byDay.sales[key] || 0) + (r.amount || 0);
+      byDay.materialCost[key] = (byDay.materialCost[key] || 0) + (r.materialCost || 0);
     } else if (r.type === 'expense') {
       byDay.expenses[key] = (byDay.expenses[key] || 0) + Math.abs(r.amount || 0);
     } else if (r.type === 'purchase') {
       byDay.purchases[key] = (byDay.purchases[key] || 0) + Math.abs(r.amount || 0);
     }
   }
-  
+
   const allDays = [...new Set([...Object.keys(byDay.sales), ...Object.keys(byDay.expenses), ...Object.keys(byDay.purchases)])].sort();
-  
+
   const chartData = allDays.map(k => ({
     date: new Date(k),
     sales: byDay.sales[k] || 0,
     expenses: byDay.expenses[k] || 0,
-    purchases: byDay.purchases[k] || 0
+    purchases: byDay.purchases[k] || 0,
+    materialCost: byDay.materialCost[k] || 0
   }));
 
   // Draw charts
@@ -931,23 +971,15 @@ async function onExport(){
 }
 async function onImport(file){
   if(!file) return;
+  if(!confirm("Attenzione: l'importazione sostituirà tutti i dati esistenti (movimenti, bobine, task). Continuare?")) return;
   try{
     const ok = await DB.importAll(state.username, JSON.parse(await file.text()));
-    if (!ok) return alert("File non valido.");
-    await refreshMovements(); await refreshTodos(); 
+    if (!ok) return alert("File non valido o checksum errato.");
+    await refreshMovements(); await refreshTodos();
     await refreshSpools(); await refreshSpoolStats();
     if(state.currentPage==="page-analisi") renderAnalytics();
-  }catch{ alert("Errore nel parsing."); }
-}
-
-async function onClearAll(){
-  if (!confirm("Sei sicuro di voler cancellare TUTTI i dati?\nQuesta operazione non può essere annullata.")) return;
-  if (!confirm("Conferma: eliminare movimenti, task e bobine?")) return;
-  await DB.clearAll();
-  await refreshMovements(); await refreshTodos();
-  await refreshSpools(); await refreshSpoolStats();
-  if(state.currentPage==="page-analisi") renderAnalytics();
-  $("dlg-settings").close();
+    alert("Backup importato con successo.");
+  }catch{ alert("Errore nel parsing del file."); }
 }
 
 /* ===== RECOVERY ===== */

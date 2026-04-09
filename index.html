@@ -122,13 +122,10 @@
                 
                 <div class="row">
                   <label>Numero bobine</label>
-                  <div class="spool-count-selector">
-                    <button type="button" class="spool-count-btn" data-count="1">1</button>
-                    <button type="button" class="spool-count-btn" data-count="2">2</button>
-                    <button type="button" class="spool-count-btn" data-count="3">3</button>
-                    <button type="button" class="spool-count-btn" data-count="4">4</button>
-                    <button type="button" class="spool-count-btn" data-count="5">5</button>
-                    <button type="button" class="spool-count-btn" data-count="6">6</button>
+                  <div class="spool-spinner">
+                    <button type="button" id="spool-count-minus">−</button>
+                    <span id="spool-count-display">1</span>
+                    <button type="button" id="spool-count-plus">+</button>
                   </div>
                 </div>
                 
@@ -304,15 +301,15 @@
                 <span class="info-value" id="stat-bobine">0</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Costo materiale</span>
+                <span class="info-label">Materiale consumato <small class="info-sublabel">(nelle vendite)</small></span>
                 <span class="info-value" id="stat-materiale">€ 0.00</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Costo spedizione</span>
+                <span class="info-label">Spedizione bobine</span>
                 <span class="info-value" id="stat-spedizione">€ 0.00</span>
               </div>
               <div class="info-item highlight">
-                <span class="info-label">Totale</span>
+                <span class="info-label">Totale investito <small class="info-sublabel">(acquisti + spedizione)</small></span>
                 <span class="info-value" id="stat-totale-filamento">€ 0.00</span>
               </div>
             </div>
@@ -336,7 +333,7 @@
           <!-- Grafico Profitto -->
           <div class="card chart-card">
             <h3 class="chart-title">📈 Profitto Lordo</h3>
-            <p class="chart-note">Entrate vendite meno il costo del materiale usato per ogni stampa. A differenza del Flusso di Cassa, non include spese generali o acquisti di bobine — mostra quanto hai guadagnato al netto del filamento consumato.</p>
+            <p class="chart-note">Formula: <strong>Vendite − Costo materiale usato = Profitto Lordo</strong><br>Non include spese generali o acquisti di bobine. Mostra quanto guadagni al netto del filamento consumato.</p>
             <div class="chart-container">
               <canvas id="chart-profit"></canvas>
             </div>
@@ -402,11 +399,8 @@
           <button type="button" id="btn-export" class="btn">&#8679; Esporta backup</button>
           <label class="btn file">&#8681; Importa backup <input id="file-import" type="file" accept=".json" hidden></label>
         </div>
-        <div class="row actions" style="margin-top:8px;">
-          <button type="button" id="btn-clear-all" class="btn primary danger">&#128465; Cancella tutti i dati</button>
-        </div>
 
-        <div class="row actions" style="justify-content:flex-end;margin-top:12px;">
+<div class="row actions" style="justify-content:flex-end;margin-top:12px;">
           <button value="cancel" class="btn">Chiudi</button>
         </div>
       </form>

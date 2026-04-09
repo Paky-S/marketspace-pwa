@@ -184,7 +184,11 @@ const DB = (()=>{
     const totalShipping = purchases.reduce((sum, m) => sum + (m.shippingCost || 0), 0);
     const totalMaterialCost = sales.reduce((sum, m) => sum + (m.materialCost || 0), 0);
     
-    const totalGramsUsed = sales.reduce((sum, m) => sum + (m.gramsUsed || 0), 0);
+    const totalGramsUsed = sales.reduce((sum, m) => {
+      if (m.filaments && m.filaments.length > 0)
+        return sum + m.filaments.reduce((s, f) => s + (f.gramsUsed || 0), 0);
+      return sum + (m.gramsUsed || 0);
+    }, 0);
     const totalPrints = sales.length;
     
     return {
@@ -353,7 +357,7 @@ const DB = (()=>{
     if(!obj||!obj.meta||!obj.payload) return false;
     const raw = JSON.stringify(obj.payload);
     if ((await sha256(raw)) !== obj.meta.checksum) return false;
-    await _clearUser(username);
+    await clearAll();
     await _batchPut("movements",(obj.payload.movements||[]).map(m=>({...m, username, archived:!!m.archived})));
     await _batchPut("tasks",(obj.payload.tasks||[]).map(t=>({...t, username, archived:!!t.archived})));
     await _batchPut("spools",(obj.payload.spools||[]));

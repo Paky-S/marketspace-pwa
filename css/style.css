@@ -325,6 +325,30 @@ main {
 }
 #filament-total strong { color: var(--fg); }
 
+/* MOVEMENT EXPAND — filament detail */
+.expandable { cursor: pointer; }
+.filament-detail-panel { display: none; margin-top: 8px; padding: 10px 12px; background: var(--bg); border-radius: 10px; border: 1px solid var(--separator); }
+.expanded .filament-detail-panel { display: block; }
+.fdl-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
+.fdl-row { display: flex; gap: 8px; font-size: .82rem; }
+.fdl-name { flex: 1; color: var(--fg); font-weight: 500; }
+.fdl-grams { color: var(--muted); }
+.fdl-cost { color: var(--primary); font-weight: 600; }
+.fdl-note { font-size: .75rem; color: var(--muted); margin: 6px 0; }
+.btn-edit-filaments { font-size: .8rem; padding: 5px 10px; background: none; border: 1px solid var(--separator); border-radius: 8px; color: var(--primary); cursor: pointer; }
+.expand-hint { font-size: .75rem; color: var(--muted); font-style: italic; }
+/* Filament inline editor */
+.filament-editor { display: flex; flex-direction: column; gap: 6px; }
+.feditor-row { display: flex; gap: 6px; align-items: center; }
+.feditor-row select { flex: 1; font-size: .82rem; }
+.feditor-grams { width: 72px; font-size: .82rem; }
+.feditor-actions { display: flex; gap: 8px; margin-top: 4px; }
+.btn-feditor-save, .btn-feditor-cancel { padding: 5px 12px; border-radius: 8px; font-size: .82rem; cursor: pointer; border: none; }
+.btn-feditor-save { background: var(--primary); color: #fff; }
+.btn-feditor-cancel { background: var(--card); color: var(--muted); border: 1px solid var(--separator); }
+/* Info sublabel */
+.info-sublabel { font-size: .7rem; color: var(--muted); font-weight: 400; display: block; }
+
 /* FORM ROWS */
 .form .row, .mov-form .row {
   margin-bottom: 16px;
@@ -462,30 +486,27 @@ input::placeholder {
   min-width: 100px;
 }
 
-/* SPOOL COUNT SELECTOR */
-.spool-count-selector {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.spool-count-btn {
-  width: 44px;
-  height: 44px;
-  padding: 0;
+/* SPOOL COUNT SPINNER */
+.spool-spinner {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 1rem;
-  background: var(--bg);
-  border: 2px solid var(--border);
+  gap: 0;
+  background: var(--card);
+  border: 1px solid var(--separator);
+  border-radius: 12px;
+  overflow: hidden;
+  width: fit-content;
 }
-
-.spool-count-btn.selected {
-  border-color: var(--primary);
-  background: var(--primary-light);
-  color: var(--primary);
+.spool-spinner button {
+  width: 44px; height: 44px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 1.2rem;
+  background: none; border: none; color: var(--primary); cursor: pointer;
+}
+.spool-spinner button:active { opacity: 0.6; }
+#spool-count-display {
+  min-width: 36px; text-align: center;
+  font-weight: 700; font-size: 1.1rem; color: var(--fg);
 }
 
 /* SPOOL ITEM IN PURCHASE */
@@ -495,7 +516,20 @@ input::placeholder {
   padding: 16px;
   margin-bottom: 12px;
 }
+.purchase-spool-item:nth-child(even) {
+  background: var(--card);
+  border: 1px solid var(--separator);
+}
+.purchase-spool-header {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--separator);
+}
 
+/* legacy h4 override — unused but kept for safety */
 .purchase-spool-item h4 {
   font-size: 0.8rem;
   font-weight: 600;

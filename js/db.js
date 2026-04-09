@@ -337,7 +337,7 @@ const DB = (()=>{
   
   const getSpool = (id)=>_get("spools",id);
   const addSpoolStock = (id,grams)=>_patch("spools",id,row=>({grams_available:Number(row.grams_available||0)+Number(grams||0)}));
-  async function consumeSpool(id,grams){ const row=await getSpool(id); if(!row) return false; if(Number(row.grams_available)<Number(grams)) throw new Error("insufficient"); return _patch("spools",id,{grams_available:Number(row.grams_available)-Number(grams)}); }
+  async function consumeSpool(id,grams){ const row=await getSpool(id); if(!row) return false; if(Number(row.grams_available)<Number(grams)) throw new Error("insufficient"); const newGrams=Number(row.grams_available)-Number(grams); await _patch("spools",id,{grams_available:newGrams}); if(newGrams<=0) await archiveSpool(id); return true; }
   const editSpool = (id,patch)=>_patch("spools",id,patch);
   const archiveSpool = (id)=>_setFlag("spools",id,{archived:true});
   const unarchiveSpool = (id)=>_setFlag("spools",id,{archived:false});

@@ -639,7 +639,7 @@ async function refreshMovements(){
 
     if (hasFilaments) {
       li.classList.add("expandable");
-      left.addEventListener("click", (e)=>{ if (!e.target.closest("button")) li.classList.toggle("expanded"); });
+      left.addEventListener("click", (e)=>{ if (!e.target.closest("button") && !e.target.closest(".filament-detail-panel")) li.classList.toggle("expanded"); });
       const btnEF = left.querySelector(".btn-edit-filaments");
       if (btnEF) btnEF.addEventListener("click", (e)=>{ e.stopPropagation(); showFilamentEditor(li, m); });
     }
@@ -691,7 +691,10 @@ async function refreshMovements(){
     li.append(left, right); list.appendChild(li);
   }
 
-  // Aggiorna cache e select filamenti nella form vendita
+  await refreshSpoolCache();
+}
+
+async function refreshSpoolCache(){
   const spools = await DB.listSpools();
   _spoolsCache = spools;
   const opts = buildSpoolOptions(spools);
@@ -770,15 +773,19 @@ async function refreshSpools(){
       refreshSpools();
       refreshSpoolStats();
     });
-    const tog  = mkBtn(s.archived?"Ripristina":"Archivia", s.archived?"undo":"archive", async()=>{ 
-      if(s.archived){ await DB.editSpool(s.id,{archived:false}); } 
-      else { await DB.archiveSpool(s.id);}
+    const tog  = mkBtn(s.archived?"Ripristina":"Termina bobina", s.archived?"undo":"archive", async()=>{
+      if(s.archived){ await DB.editSpool(s.id,{archived:false}); }
+      else {
+        if (!confirm(`Terminare la bobina "${s.name||s.material}"?\nNon apparirà più nel magazzino.`)) return;
+        await DB.archiveSpool(s.id);
+      }
       refreshSpools();
       refreshSpoolStats();
     });
 
     right.append(edit,tog); li.append(left,right); list.appendChild(li);
   }
+  await refreshSpoolCache();
 }
 
 async function refreshSpoolStats(){

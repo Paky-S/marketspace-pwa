@@ -245,9 +245,23 @@ const Activity = (() => {
     if (_dataSub) { _sb.removeChannel(_dataSub); _dataSub = null; }
   }
 
+  // Rinomina attività (solo il proprietario)
+  async function renameActivity(activityId, newName) {
+    const trimmed = newName.trim();
+    if (!trimmed) throw new Error("Il nome non può essere vuoto");
+    if (trimmed.length > 60) throw new Error("Nome troppo lungo (max 60 caratteri)");
+    const { error } = await _sb
+      .from("activities")
+      .update({ name: trimmed })
+      .eq("id", activityId);
+    if (error) throw new Error(error.message);
+    if (_current && _current.id === activityId) _current.name = trimmed;
+    return trimmed;
+  }
+
   return {
     init, getCurrent, setCurrent,
-    listUserActivities, createActivity,
+    listUserActivities, createActivity, renameActivity,
     generateInviteCode, requestJoinWithCode,
     listPendingRequests, respondToRequest,
     listMembers, removeMember,

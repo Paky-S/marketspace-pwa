@@ -44,7 +44,10 @@
             </div>
             <div class="auth-field">
               <label>Password</label>
-              <input id="login-password" type="password" placeholder="La tua password" autocomplete="current-password" required>
+              <div class="pw-wrap">
+                <input id="login-password" type="password" placeholder="La tua password" autocomplete="current-password" required>
+                <button type="button" class="pw-toggle" aria-label="Mostra password">👁</button>
+              </div>
             </div>
             <div id="login-error" class="auth-error"></div>
             <button type="submit" class="btn primary auth-btn">Accedi</button>
@@ -58,11 +61,17 @@
             </div>
             <div class="auth-field">
               <label>Password</label>
-              <input id="reg-password" type="password" placeholder="Minimo 6 caratteri" autocomplete="new-password" required>
+              <div class="pw-wrap">
+                <input id="reg-password" type="password" placeholder="Minimo 6 caratteri" autocomplete="new-password" required>
+                <button type="button" class="pw-toggle" aria-label="Mostra password">👁</button>
+              </div>
             </div>
             <div class="auth-field">
               <label>Ripeti password</label>
-              <input id="reg-password2" type="password" placeholder="Ripeti la password" autocomplete="new-password" required>
+              <div class="pw-wrap">
+                <input id="reg-password2" type="password" placeholder="Ripeti la password" autocomplete="new-password" required>
+                <button type="button" class="pw-toggle" aria-label="Mostra password">👁</button>
+              </div>
             </div>
             <div id="reg-error" class="auth-error"></div>
             <button type="submit" class="btn primary auth-btn">Crea account</button>
@@ -448,7 +457,10 @@
     <dialog id="dlg-settings">
       <form method="dialog" class="card" style="max-width:520px;">
         <h2 style="margin:0 0 4px;">Impostazioni</h2>
-        <p class="muted" id="settings-activity-name" style="margin:0 0 12px;font-size:.85rem;"></p>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <p class="muted" id="settings-activity-name" style="margin:0;font-size:.85rem;flex:1;"></p>
+          <button type="button" id="btn-rename-activity" class="btn btn-sm" style="flex-shrink:0;">✏️ Rinomina</button>
+        </div>
 
         <div class="row" style="align-items:center;">
           <label>Tema</label>

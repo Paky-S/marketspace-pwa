@@ -1058,10 +1058,43 @@ dialog .card {
   margin: 0;
 }
 
-/* INPUT TYPE DATE */
+/* INPUT TYPE DATE — fix overflow mobile */
 input[type="date"] {
   width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
 }
+
+/* PASSWORD TOGGLE */
+.pw-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.pw-wrap input {
+  flex: 1;
+  padding-right: 48px;
+}
+.pw-toggle {
+  position: absolute;
+  right: 4px;
+  width: 40px !important;
+  height: 40px;
+  padding: 0 !important;
+  border: none !important;
+  background: none !important;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  opacity: .6;
+}
+.pw-toggle:hover { opacity: 1; }
 
 /* MICRO TWEAKS */
 @media (max-width: 480px) {

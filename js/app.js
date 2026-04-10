@@ -227,6 +227,16 @@ async function showApp(activityId, activityName, role){
 
 /* ===== AUTH EVENTS ===== */
 function bindAuthEvents(){
+  // Toggle mostra/nascondi password
+  document.querySelectorAll(".pw-toggle").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const input = btn.previousElementSibling;
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      btn.textContent = show ? "🙈" : "👁";
+    });
+  });
+
   // Switcher tab login/registrazione
   document.querySelectorAll(".auth-tab").forEach(btn=>{
     btn.addEventListener("click",()=>{
@@ -452,6 +462,19 @@ function bindEvents(){
   on($("btn-change-activity"),"click", async()=>{
     Activity.unsubscribeAll();
     await showActivityScreen();
+  });
+
+  // Rinomina attività
+  on($("btn-rename-activity"),"click", async()=>{
+    const act = Activity.getCurrent();
+    if (!act || act.role !== "owner") return alert("Solo il proprietario può rinominare l'attività.");
+    const newName = prompt("Nuovo nome dell'attività:", act.name);
+    if (!newName || newName.trim() === act.name) return;
+    try {
+      const renamed = await Activity.renameActivity(act.id, newName);
+      document.getElementById("version-badge").textContent = renamed;
+      document.getElementById("settings-activity-name").textContent = `Attività: ${renamed}`;
+    } catch(err) { alert("Errore: " + err.message); }
   });
 
   // Settings
@@ -900,7 +923,7 @@ async function refreshMovements(){
   const rows = await DB.listMovements(state.username, filter, showArch);
   
   let saldo = 0;
-  for (const m of rows) if (!m.archived && m.type !== 'purchase') saldo += m.amount;
+  for (const m of rows) if (!m.archived) saldo += m.amount; // acquisti e spese hanno amount negativo
   
   document.getElementById("saldo").innerHTML = `<strong>${formatCurrency(saldo)}</strong>`;
 

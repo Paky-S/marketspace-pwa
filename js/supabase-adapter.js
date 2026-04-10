@@ -99,8 +99,10 @@ const DB = (() => {
       return s + (m.gramsUsed || 0);
     }, 0);
 
+    const totalOutgoing = totalExpenses + totalPurchases; // tutte le uscite di cassa
     return {
       totalSales, totalExpenses, totalPurchases, totalShipping, totalMaterialCost,
+      totalOutgoing,
       profit: totalSales - totalMaterialCost,
       totalGramsUsed,
       totalPrints: sales.length,

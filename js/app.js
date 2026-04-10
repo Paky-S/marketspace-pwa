@@ -1257,8 +1257,8 @@ async function renderAnalytics(){
 
   // Update stats
   document.getElementById("stat-entrata").textContent = formatCurrency(stats.totalSales);
-  document.getElementById("stat-uscita").textContent = formatCurrency(stats.totalExpenses);
-  document.getElementById("stat-saldo").textContent = formatCurrency(stats.totalSales - stats.totalExpenses);
+  document.getElementById("stat-uscita").textContent = formatCurrency(stats.totalOutgoing);
+  document.getElementById("stat-saldo").textContent = formatCurrency(stats.totalSales - stats.totalOutgoing);
   
   document.getElementById("stat-bobine").textContent = stats.countPurchases;
   document.getElementById("stat-materiale").textContent = formatCurrency(stats.totalMaterialCost);

@@ -1,0 +1,10 @@
+# Database locali
+*.db
+*.sqlite
+
+# Cartella Claude Code
+.claude/
+
+# File di sistema
+.DS_Store
+Thumbs.db

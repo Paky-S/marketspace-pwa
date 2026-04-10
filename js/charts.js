@@ -156,7 +156,7 @@ function drawProfitChart(canvas, data, totalMaterialCost) {
   
   for (const d of data) {
     cumSales += d.sales;
-    cumMaterial += (d.sales > 0) ? (d.sales * 0.3) : 0; // Rough estimate
+    cumMaterial += (d.materialCost || 0);
     profitData.push(cumSales - cumMaterial);
   }
   

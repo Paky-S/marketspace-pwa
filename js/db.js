@@ -139,7 +139,8 @@ const DB = (()=>{
       spoolId: m.spoolId || null,
       gramsUsed: m.gramsUsed || 0,
       materialCost: m.materialCost || 0,
-      shippingCost: m.shippingCost || 0
+      shippingCost: m.shippingCost || 0,
+      filaments: m.filaments || []
     };
     return _put("movements", movement);
   }
@@ -183,7 +184,11 @@ const DB = (()=>{
     const totalShipping = purchases.reduce((sum, m) => sum + (m.shippingCost || 0), 0);
     const totalMaterialCost = sales.reduce((sum, m) => sum + (m.materialCost || 0), 0);
     
-    const totalGramsUsed = sales.reduce((sum, m) => sum + (m.gramsUsed || 0), 0);
+    const totalGramsUsed = sales.reduce((sum, m) => {
+      if (m.filaments && m.filaments.length > 0)
+        return sum + m.filaments.reduce((s, f) => s + (f.gramsUsed || 0), 0);
+      return sum + (m.gramsUsed || 0);
+    }, 0);
     const totalPrints = sales.length;
     
     return {
@@ -283,7 +288,7 @@ const DB = (()=>{
     const shippingPerSpool = spoolsData.length > 0 ? shippingCost / spoolsData.length : 0;
     
     for (const data of spoolsData) {
-      const costPerKg = (Number(data.cost) + shippingPerSpool) / (Number(data.grams) / 1000);
+      const costPerKg = Math.round(((Number(data.cost) + shippingPerSpool) / (Number(data.grams) / 1000)) * 100) / 100;
       const id = await addSpool({
         name: data.material + " " + data.colorName,
         material: data.material,
@@ -332,7 +337,7 @@ const DB = (()=>{
   
   const getSpool = (id)=>_get("spools",id);
   const addSpoolStock = (id,grams)=>_patch("spools",id,row=>({grams_available:Number(row.grams_available||0)+Number(grams||0)}));
-  async function consumeSpool(id,grams){ const row=await getSpool(id); if(!row) return false; if(Number(row.grams_available)<Number(grams)) throw new Error("insufficient"); return _patch("spools",id,{grams_available:Number(row.grams_available)-Number(grams)}); }
+  async function consumeSpool(id,grams){ const row=await getSpool(id); if(!row) return false; if(Number(row.grams_available)<Number(grams)) throw new Error("insufficient"); const newGrams=Number(row.grams_available)-Number(grams); await _patch("spools",id,{grams_available:newGrams}); if(newGrams<=0) await archiveSpool(id); return true; }
   const editSpool = (id,patch)=>_patch("spools",id,patch);
   const archiveSpool = (id)=>_setFlag("spools",id,{archived:true});
   const unarchiveSpool = (id)=>_setFlag("spools",id,{archived:false});
@@ -352,7 +357,7 @@ const DB = (()=>{
     if(!obj||!obj.meta||!obj.payload) return false;
     const raw = JSON.stringify(obj.payload);
     if ((await sha256(raw)) !== obj.meta.checksum) return false;
-    await _clearUser(username);
+    await clearAll();
     await _batchPut("movements",(obj.payload.movements||[]).map(m=>({...m, username, archived:!!m.archived})));
     await _batchPut("tasks",(obj.payload.tasks||[]).map(t=>({...t, username, archived:!!t.archived})));
     await _batchPut("spools",(obj.payload.spools||[]));
@@ -365,14 +370,15 @@ const DB = (()=>{
     rM.onsuccess=()=>{ rM.result.forEach(k=>stM.delete(k)); };
     rT.onsuccess=()=>{ rT.result.forEach(k=>stT.delete(k)); };
   }); }
+  function clearAll(){ return new Promise((res,rej)=>{ const tx=_db.transaction(["movements","tasks","spools"],"readwrite"); tx.objectStore("movements").clear(); tx.objectStore("tasks").clear(); tx.objectStore("spools").clear(); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
   async function sha256(text){ const enc=new TextEncoder().encode(text); const hash = await crypto.subtle.digest("SHA-256", enc); return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,"0")).join(""); }
 
-  return { 
+  return {
     open, MATERIALS, GRAM_OPTIONS,
     addMovement, listMovements, getMovementStats, getMostUsedMaterial,
     editMovement, deleteMovement, archiveMovement, unarchiveMovement,
     addTask, listTasks, toggleTask, editTask, deleteTask, archiveTask, unarchiveTask,
     addSpool, addMultipleSpools, listSpools, getSpoolStats, getSpool, addSpoolStock, consumeSpool, editSpool, archiveSpool, unarchiveSpool,
-    setMeta, getMeta, exportAll, importAll 
+    setMeta, getMeta, exportAll, importAll, clearAll
   };
 })();

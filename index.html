@@ -456,10 +456,13 @@
     ════════════════════════════════════════════════════════════════════════ -->
     <dialog id="dlg-settings">
       <form method="dialog" class="card" style="max-width:520px;">
-        <h2 style="margin:0 0 4px;">Impostazioni</h2>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-          <p class="muted" id="settings-activity-name" style="margin:0;font-size:.85rem;flex:1;"></p>
-          <button type="button" id="btn-rename-activity" class="btn btn-sm" style="flex-shrink:0;">✏️ Rinomina</button>
+        <h2 style="margin:0 0 12px;">Impostazioni</h2>
+        <div class="settings-activity-block">
+          <span class="settings-activity-label">Attività corrente</span>
+          <div class="settings-activity-row">
+            <strong id="settings-activity-name" class="settings-activity-name"></strong>
+            <button type="button" id="btn-rename-activity" class="btn-rename-link">✏️ Rinomina</button>
+          </div>
         </div>
 
         <div class="row" style="align-items:center;">

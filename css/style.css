@@ -1086,7 +1086,6 @@ input[type="date"] {
   border: none !important;
   background: none !important;
   cursor: pointer;
-  font-size: 1.1rem;
   color: var(--muted);
   display: flex;
   align-items: center;
@@ -1095,6 +1094,53 @@ input[type="date"] {
   opacity: .6;
 }
 .pw-toggle:hover { opacity: 1; }
+.pw-toggle svg { pointer-events: none; }
+
+/* SETTINGS — ACTIVITY BLOCK */
+.settings-activity-block {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+.settings-activity-label {
+  font-size: .72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--muted);
+}
+.settings-activity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+.settings-activity-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--primary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.btn-rename-link {
+  flex-shrink: 0;
+  width: auto !important;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: .8rem;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-rename-link:hover { color: var(--accent); border-color: var(--accent); }
 
 /* MICRO TWEAKS */
 @media (max-width: 480px) {

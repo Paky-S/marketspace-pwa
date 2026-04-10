@@ -185,7 +185,7 @@ async function showApp(activityId, activityName, role){
 
   // Titolo header
   document.getElementById("version-badge").textContent = activityName;
-  document.getElementById("settings-activity-name").textContent = `Attività: ${activityName}`;
+  document.getElementById("settings-activity-name").textContent = activityName;
 
   // Carica preferenze
   try {
@@ -228,12 +228,15 @@ async function showApp(activityId, activityName, role){
 /* ===== AUTH EVENTS ===== */
 function bindAuthEvents(){
   // Toggle mostra/nascondi password
+  const EYE_OPEN = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+  const EYE_SLASH = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
   document.querySelectorAll(".pw-toggle").forEach(btn=>{
+    btn.innerHTML = EYE_OPEN;
     btn.addEventListener("click",()=>{
       const input = btn.previousElementSibling;
       const show = input.type === "password";
       input.type = show ? "text" : "password";
-      btn.textContent = show ? "🙈" : "👁";
+      btn.innerHTML = show ? EYE_SLASH : EYE_OPEN;
     });
   });
 
@@ -473,7 +476,7 @@ function bindEvents(){
     try {
       const renamed = await Activity.renameActivity(act.id, newName);
       document.getElementById("version-badge").textContent = renamed;
-      document.getElementById("settings-activity-name").textContent = `Attività: ${renamed}`;
+      document.getElementById("settings-activity-name").textContent = renamed;
     } catch(err) { alert("Errore: " + err.message); }
   });
 

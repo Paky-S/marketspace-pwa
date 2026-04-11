@@ -19,13 +19,15 @@ const Activity = (() => {
       .select("role, joined_at, activities(id, name, created_at)")
       .eq("user_id", userId);
     if (error) throw error;
-    return (data || []).map(m => ({
-      id: m.activities.id,
-      name: m.activities.name,
-      role: m.role,
-      joinedAt: m.joined_at,
-      createdAt: m.activities.created_at
-    }));
+    return (data || [])
+      .filter(m => m.activities)  // join può essere null se l'attività non è leggibile via RLS
+      .map(m => ({
+        id: m.activities.id,
+        name: m.activities.name,
+        role: m.role,
+        joinedAt: m.joined_at,
+        createdAt: m.activities.created_at
+      }));
   }
 
   // Crea nuova attività (verifica nome unico)

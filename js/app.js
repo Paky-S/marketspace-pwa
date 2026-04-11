@@ -349,7 +349,13 @@ async function renderActivityList(){
   list.innerHTML = '<div class="act-loading">Caricamento...</div>';
   try{
     const u = Auth.getCurrentUser();
-    const activities = await Activity.listUserActivities(u.id);
+    let activities = await Activity.listUserActivities(u.id);
+    // Possibile timing issue subito dopo il login: la sessione Supabase
+    // potrebbe non essere ancora propagata — un retry risolve.
+    if (activities.length === 0) {
+      await new Promise(r => setTimeout(r, 700));
+      activities = await Activity.listUserActivities(u.id);
+    }
     list.innerHTML="";
     if (activities.length===0){
       list.innerHTML='<p class="act-empty muted">Nessuna attività ancora — creane una o entra con un codice invito.</p>';

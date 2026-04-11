@@ -247,6 +247,24 @@ const Activity = (() => {
     if (_dataSub) { _sb.removeChannel(_dataSub); _dataSub = null; }
   }
 
+  // Elimina attività (solo il proprietario) — chiama RPC server-side con CASCADE
+  async function deleteActivity(activityId) {
+    const { error } = await _sb.rpc('delete_activity', { p_activity_id: activityId });
+    if (error) throw new Error(error.message);
+    if (_current && _current.id === activityId) _current = null;
+  }
+
+  // Abbandona attività (solo membri, non owner)
+  async function leaveActivity(activityId, userId) {
+    const { error } = await _sb
+      .from('memberships')
+      .delete()
+      .eq('activity_id', activityId)
+      .eq('user_id', userId);
+    if (error) throw new Error(error.message);
+    if (_current && _current.id === activityId) _current = null;
+  }
+
   // Rinomina attività (solo il proprietario)
   async function renameActivity(activityId, newName) {
     const trimmed = newName.trim();
@@ -263,7 +281,7 @@ const Activity = (() => {
 
   return {
     init, getCurrent, setCurrent,
-    listUserActivities, createActivity, renameActivity,
+    listUserActivities, createActivity, renameActivity, deleteActivity, leaveActivity,
     generateInviteCode, requestJoinWithCode,
     listPendingRequests, respondToRequest,
     listMembers, removeMember,

@@ -1417,6 +1417,25 @@ input, select {
   font-weight: 300;
 }
 
+.act-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.act-action-btn {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.6;
+  width: auto !important;
+  transition: opacity .15s, background .15s;
+}
+.act-action-btn:hover { opacity: 1; background: var(--border); }
+
 .act-actions {
   display: flex;
   flex-direction: column;

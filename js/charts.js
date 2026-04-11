@@ -39,7 +39,7 @@ function drawCashFlowChart(canvas, data) {
     cumExpenses += d.expenses;
     cumPurchases += d.purchases;
     salesData.push(cumSales);
-    expensesData.push(cumExpenses);
+    expensesData.push(cumExpenses + cumPurchases); // uscite totali = spese + acquisti
     purchasesData.push(cumPurchases);
     balanceData.push(cumSales - cumExpenses - cumPurchases);
   }

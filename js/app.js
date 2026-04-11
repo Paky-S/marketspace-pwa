@@ -1,7 +1,8 @@
-// MarketSpace v2.0 - Multi-tenant cloud
+// MarketSpace v2.1 - Multi-tenant cloud
 let _spoolsCache = [];
 let _sb = null; // Supabase client
 let _inviteTimer = null; // timer countdown codice invito
+let _activityListSub = null; // Supabase Realtime subscription per la lista attività
 
 const state = {
   version: "0.0.0",
@@ -173,11 +174,28 @@ async function showActivityScreen(){
   document.getElementById("app").hidden = true;
   document.getElementById("act-username-display").textContent = state.username;
   await renderActivityList();
+
+  // Subscription real-time: se qualcuno accetta la join request, la lista si aggiorna automaticamente
+  const u = Auth.getCurrentUser();
+  if (u && _sb) {
+    if (_activityListSub) _sb.removeChannel(_activityListSub);
+    _activityListSub = _sb
+      .channel('my_memberships_' + u.id)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'memberships',
+        filter: `user_id=eq.${u.id}`
+      }, () => renderActivityList())
+      .subscribe();
+  }
 }
 
 async function showApp(activityId, activityName, role){
+  // Ferma la subscription della lista attività
+  if (_activityListSub) { _sb.removeChannel(_activityListSub); _activityListSub = null; }
+
   Activity.setCurrent({ id: activityId, name: activityName, role });
   DB.init(_sb, activityId);
+  _spoolsCache = []; // reset cache bobine della vecchia azienda
 
   document.getElementById("screen-auth").hidden = true;
   document.getElementById("screen-activity").hidden = true;
@@ -213,8 +231,12 @@ async function showApp(activityId, activityName, role){
     if (tck) tck.checked = !!todoPref;
   } catch(e){}
 
-  await refreshMovements();
-  await refreshTodos();
+  // Reset form filamenti (bobine della vecchia azienda)
+  const filamentRowsEl = document.getElementById("filament-rows");
+  if (filamentRowsEl) { filamentRowsEl.innerHTML = ""; addFilamentRow(); }
+
+  // Carica dati in parallelo
+  await Promise.all([refreshMovements(), refreshTodos(), refreshSpoolCache()]);
 
   // Realtime sync
   Activity.subscribeToData(activityId, {
@@ -364,8 +386,49 @@ async function renderActivityList(){
     for (const act of activities){
       const item = document.createElement("div");
       item.className="act-item";
-      item.innerHTML=`<div class="act-item-icon">${act.role==="owner"?"🏢":"👤"}</div><div class="act-item-info"><strong>${act.name}</strong><span class="muted">${act.role==="owner"?"Proprietario":"Socio"}</span></div><div class="act-item-arrow">›</div>`;
-      item.addEventListener("click",()=>showApp(act.id, act.name, act.role));
+      const isOwner = act.role === "owner";
+      item.innerHTML=`
+        <div class="act-item-icon">${isOwner?"🏢":"👤"}</div>
+        <div class="act-item-info"><strong>${act.name}</strong><span class="muted">${isOwner?"Proprietario":"Socio"}</span></div>
+        <div class="act-item-actions">
+          ${isOwner
+            ? `<button class="act-action-btn act-delete-btn" title="Elimina attività">🗑️</button>`
+            : `<button class="act-action-btn act-leave-btn" title="Abbandona attività">🚪</button>`
+          }
+          <div class="act-item-arrow">›</div>
+        </div>`;
+
+      // Click sulla card → entra nell'attività
+      item.addEventListener("click", (e) => {
+        if (e.target.closest(".act-action-btn")) return; // ignora click sui pulsanti
+        showApp(act.id, act.name, act.role);
+      });
+
+      // Pulsante elimina (owner)
+      const btnDel = item.querySelector(".act-delete-btn");
+      if (btnDel) btnDel.addEventListener("click", async(e) => {
+        e.stopPropagation();
+        if (!confirm(`Eliminare definitivamente "${act.name}"?\nTutti i dati (movimenti, bobine, task) saranno cancellati e non recuperabili.`)) return;
+        try {
+          // Imposta temporaneamente _current per la verifica ruolo in deleteActivity
+          Activity.setCurrent({ id: act.id, name: act.name, role: act.role });
+          await Activity.deleteActivity(act.id);
+          await renderActivityList();
+        } catch(err) { alert("Errore: " + err.message); }
+      });
+
+      // Pulsante abbandona (member)
+      const btnLeave = item.querySelector(".act-leave-btn");
+      if (btnLeave) btnLeave.addEventListener("click", async(e) => {
+        e.stopPropagation();
+        if (!confirm(`Abbandonare "${act.name}"?\nDovrai ricevere un nuovo codice invito per rientrare.`)) return;
+        try {
+          const u = Auth.getCurrentUser();
+          await Activity.leaveActivity(act.id, u.id);
+          await renderActivityList();
+        } catch(err) { alert("Errore: " + err.message); }
+      });
+
       list.appendChild(item);
     }
   }catch(err){
@@ -486,6 +549,20 @@ function bindEvents(){
     } catch(err) { alert("Errore: " + err.message); }
   });
 
+  // Abbandona attività (visibile solo ai non-owner)
+  on($("btn-leave-activity"),"click", async()=>{
+    const act = Activity.getCurrent();
+    if (!act) return;
+    if (!confirm(`Abbandonare "${act.name}"?\nDovrai ricevere un nuovo codice invito per rientrare.`)) return;
+    try {
+      const u = Auth.getCurrentUser();
+      document.getElementById("dlg-settings").close();
+      await Activity.leaveActivity(act.id, u.id);
+      Activity.unsubscribeAll();
+      await showActivityScreen();
+    } catch(err) { alert("Errore: " + err.message); }
+  });
+
   // Settings
   const dlg = $("dlg-settings");
   on($("btn-settings"),"click", async()=>{
@@ -493,6 +570,10 @@ function bindEvents(){
     document.querySelectorAll(".theme-swatch").forEach(s=>{
       s.classList.toggle("active", s.dataset.theme === cur);
     });
+    // Mostra "Abbandona" solo ai soci, non all'owner
+    const act = Activity.getCurrent();
+    const leaveRow = $("settings-leave-row");
+    if (leaveRow) leaveRow.hidden = !act || act.role === "owner";
     await loadMembersPanel();
     dlg.showModal();
   });

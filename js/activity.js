@@ -237,6 +237,12 @@ const Activity = (() => {
         filter: `activity_id=eq.${activityId}`
       }, callbacks.tasks);
     }
+    if (callbacks.members) {
+      ch.on("postgres_changes", {
+        event: "*", schema: "public", table: "memberships",
+        filter: `activity_id=eq.${activityId}`
+      }, callbacks.members);
+    }
 
     _dataSub = ch.subscribe();
     return _dataSub;

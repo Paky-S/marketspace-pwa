@@ -240,11 +240,27 @@ async function showApp(activityId, activityName, role){
 
   // Realtime sync
   Activity.subscribeToData(activityId, {
-    movements: () => { refreshMovements(); if(state.currentPage==="page-analisi") renderAnalytics(); },
-    spools:    () => { refreshSpoolCache(); if(state.currentPage==="page-magazzino") { refreshSpools(); refreshSpoolStats(); } },
-    tasks:     () => refreshTodos()
+    movements: () => {
+      refreshMovements();
+      renderAnalytics(); // aggiorna sempre saldo e grafici, indipendentemente dalla pagina attiva
+    },
+    spools: () => {
+      refreshSpoolCache();
+      if (state.currentPage === "page-magazzino") { refreshSpools(); refreshSpoolStats(); }
+    },
+    tasks: () => refreshTodos(),
+    members: () => {
+      // Aggiorna lista soci se il dialog impostazioni è aperto
+      const dlg = document.getElementById("dlg-settings");
+      if (dlg && dlg.open) loadMembersPanel();
+    }
   });
-  Activity.subscribeToRequests(activityId, () => refreshPendingBadge());
+  Activity.subscribeToRequests(activityId, () => {
+    refreshPendingBadge();
+    // Aggiorna anche la lista richieste nel dialog se è aperto
+    const dlg = document.getElementById("dlg-settings");
+    if (dlg && dlg.open) loadPendingRequests();
+  });
 }
 
 /* ===== AUTH EVENTS ===== */

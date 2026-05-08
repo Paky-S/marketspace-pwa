@@ -1,11 +1,21 @@
 // IndexedDB wrapper
 const DB = (()=>{
   const DB_NAME = "marketspace-db";
-  const DB_VERSION = 4;
+  const DB_VERSION = 5;
   let _db;
 
   const MATERIALS = ["PLA", "PLA+", "PETG", "ABS", "TPU", "ASA", "PC", "PP", "ALTRO"];
   const GRAM_OPTIONS = [250, 500, 750, 1000, 1500, 2000, 3000, 5000];
+
+  const DEFAULT_RATES = {
+    electricityRate: 0.25,
+    printerWatt: 200,
+    laborRate: 15,
+    printerCost: 300,
+    printerLifespan: 5000,
+    defaultMargin: 30,
+    marketplaceFee: 15
+  };
 
   function open(){
     return new Promise((res,rej)=>{
@@ -13,7 +23,7 @@ const DB = (()=>{
       req.onupgradeneeded = (ev)=>{
         const db = ev.target.result;
         
-        // Movements - Aggiornato v4
+        // Movements
         if (!db.objectStoreNames.contains("movements")){
           const st = db.createObjectStore("movements",{keyPath:"id",autoIncrement:true});
           st.createIndex("by_user","username",{unique:false});
@@ -21,7 +31,6 @@ const DB = (()=>{
           st.createIndex("by_archived","archived",{unique:false});
           st.createIndex("by_type","type",{unique:false});
         } else if (ev.oldVersion < 4) {
-          // Migrazione da versione precedente
           const st = req.transaction.objectStore("movements");
           if (!st.indexNames.contains("by_type")) {
             st.createIndex("by_type","type",{unique:false});
@@ -36,7 +45,7 @@ const DB = (()=>{
           st.createIndex("by_done","done",{unique:false});
         }
         
-        // Spools - Aggiornato v4
+        // Spools
         if (!db.objectStoreNames.contains("spools")){
           const st = db.createObjectStore("spools",{keyPath:"id",autoIncrement:true});
           st.createIndex("by_archived","archived",{unique:false});
@@ -53,6 +62,19 @@ const DB = (()=>{
           }
         }
         
+        // Projects (nuovo v5)
+        if (!db.objectStoreNames.contains("projects")){
+          const st = db.createObjectStore("projects",{keyPath:"id",autoIncrement:true});
+          st.createIndex("by_user","username",{unique:false});
+          st.createIndex("by_archived","archived",{unique:false});
+          st.createIndex("by_created","createdAt",{unique:false});
+        }
+        
+        // Rates (nuovo v5)
+        if (!db.objectStoreNames.contains("rates")){
+          db.createObjectStore("rates",{keyPath:"key"});
+        }
+        
         // Meta
         if (!db.objectStoreNames.contains("meta")){
           db.createObjectStore("meta",{keyPath:"key"});
@@ -67,15 +89,18 @@ const DB = (()=>{
   }
 
   async function _postOpenMigrations(){
-    const migrated = await getMeta("migrated_v4");
+    const migrated = await getMeta("migrated_v5");
     if (migrated) return;
     
-    // Migra movements: aggiungi type='sale' ai record senza type
-    await _ensureTypeDefault("movements");
-    // Migra spools: aggiungi campi mancanti
-    await _ensureSpoolDefaults();
+    // Inizializza tariffe default se non esistono
+    for (const [key, value] of Object.entries(DEFAULT_RATES)) {
+      const existing = await getRate(key);
+      if (existing === undefined || existing === null) {
+        await setRate(key, value);
+      }
+    }
     
-    await setMeta("migrated_v4", true);
+    await setMeta("migrated_v5", true);
   }
   
   function _ensureTypeDefault(store){
@@ -140,7 +165,8 @@ const DB = (()=>{
       gramsUsed: m.gramsUsed || 0,
       materialCost: m.materialCost || 0,
       shippingCost: m.shippingCost || 0,
-      filaments: m.filaments || []
+      filaments: m.filaments || [],
+      projectIds: m.projectIds || []
     };
     return _put("movements", movement);
   }
@@ -241,6 +267,7 @@ const DB = (()=>{
     };
   }
   
+  const getMovement = (id)=>_get("movements",id);
   const editMovement = (id,patch)=>_patch("movements",id,patch);
   const deleteMovement = (id)=>_del("movements",id);
   const archiveMovement = (id)=>_setFlag("movements",id,{archived:true});
@@ -342,14 +369,73 @@ const DB = (()=>{
   const archiveSpool = (id)=>_setFlag("spools",id,{archived:true});
   const unarchiveSpool = (id)=>_setFlag("spools",id,{archived:false});
 
+  // Rates (Tariffe)
+  function setRate(key, value){ return new Promise((res,rej)=>{ const [tx,st]=_tx("rates","readwrite"); const r=st.put({key,value}); r.onsuccess=()=>res(true); r.onerror=()=>rej(r.error); }); }
+  function getRate(key){ return new Promise((res,rej)=>{ const [tx,st]=_tx("rates","readonly"); const r=st.get(key); r.onsuccess=()=>res(r.result?.value); r.onerror=()=>rej(r.error); }); }
+  async function getAllRates(){
+    return new Promise((res,rej)=>{
+      const [tx,st]=_tx("rates","readonly"); const r=st.getAll();
+      r.onsuccess=()=>{ const obj={}; (r.result||[]).forEach(item=>{ obj[item.key]=item.value; }); res({...DEFAULT_RATES, ...obj}); };
+      r.onerror=()=>rej(r.error);
+    });
+  }
+  async function saveAllRates(rates){
+    for (const [key, value] of Object.entries(rates)) {
+      await setRate(key, value);
+    }
+  }
+
+  // Projects
+  function addProject(p){
+    const project = {
+      username: p.username,
+      name: p.name || "Progetto",
+      description: p.description || "",
+      filaments: p.filaments || [],
+      printTime: Number(p.printTime) || 0,
+      laborMinutes: Number(p.laborMinutes) || 0,
+      electricityRate: Number(p.electricityRate) || DEFAULT_RATES.electricityRate,
+      printerWatt: Number(p.printerWatt) || DEFAULT_RATES.printerWatt,
+      laborRate: Number(p.laborRate) || DEFAULT_RATES.laborRate,
+      margin: Number(p.margin) || DEFAULT_RATES.defaultMargin,
+      totalCost: Number(p.totalCost) || 0,
+      suggestedPrice: Number(p.suggestedPrice) || 0,
+      photo: p.photo || "",
+      createdAt: p.createdAt || new Date().toISOString(),
+      updatedAt: p.updatedAt || new Date().toISOString(),
+      archived: !!p.archived
+    };
+    return _put("projects", project);
+  }
+  
+  function listProjects(username, showArchived=false){
+    return new Promise((res,rej)=>{
+      const [tx,st]=_tx("projects","readonly");
+      const idx=st.index("by_user"); const r=idx.getAll(IDBKeyRange.only(username));
+      r.onsuccess=()=>{
+        let rows=(r.result||[]).filter(x=>showArchived?true:!x.archived);
+        rows.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)); res(rows);
+      };
+      r.onerror=()=>rej(r.error);
+    });
+  }
+  
+  const getProject = (id)=>_get("projects",id);
+  const editProject = (id,patch)=>_patch("projects",id,patch);
+  const deleteProject = (id)=>_del("projects",id);
+  const archiveProject = (id)=>_setFlag("projects",id,{archived:true});
+  const unarchiveProject = (id)=>_setFlag("projects",id,{archived:false});
+
   // Meta
   function setMeta(key,value){ return new Promise((res,rej)=>{ const [tx,st]=_tx("meta","readwrite"); const r=st.put({key,value}); r.onsuccess=()=>res(true); r.onerror=()=>rej(r.error); }); }
   function getMeta(key){ return new Promise((res,rej)=>{ const [tx,st]=_tx("meta","readonly"); const r=st.get(key); r.onsuccess=()=>res(r.result?.value); r.onerror=()=>rej(r.error); }); }
 
   // Export/Import
   async function exportAll(username){
-    const [movs,tasks,spools] = await Promise.all([listMovements(username,"all",true), listTasks(username,true), listSpools(true)]);
-    const payload = {version:"4", username, exportedAt:new Date().toISOString(), movements:movs, tasks, spools};
+    const [movs,tasks,spools,projects] = await Promise.all([
+      listMovements(username,"all",true), listTasks(username,true), listSpools(true), listProjects(username,true)
+    ]);
+    const payload = {version:"5", username, exportedAt:new Date().toISOString(), movements:movs, tasks, spools, projects};
     const checksum = await sha256(JSON.stringify(payload));
     return {meta:{checksum}, payload};
   }
@@ -361,6 +447,7 @@ const DB = (()=>{
     await _batchPut("movements",(obj.payload.movements||[]).map(m=>({...m, username, archived:!!m.archived})));
     await _batchPut("tasks",(obj.payload.tasks||[]).map(t=>({...t, username, archived:!!t.archived})));
     await _batchPut("spools",(obj.payload.spools||[]));
+    await _batchPut("projects",(obj.payload.projects||[]).map(p=>({...p, username, archived:!!p.archived})));
     return true;
   }
   function _batchPut(store,rows){ return new Promise((res,rej)=>{ const [tx,st]=_tx(store,"readwrite"); rows.forEach(r=>st.put(r)); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
@@ -370,15 +457,17 @@ const DB = (()=>{
     rM.onsuccess=()=>{ rM.result.forEach(k=>stM.delete(k)); };
     rT.onsuccess=()=>{ rT.result.forEach(k=>stT.delete(k)); };
   }); }
-  function clearAll(){ return new Promise((res,rej)=>{ const tx=_db.transaction(["movements","tasks","spools"],"readwrite"); tx.objectStore("movements").clear(); tx.objectStore("tasks").clear(); tx.objectStore("spools").clear(); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+  function clearAll(){ return new Promise((res,rej)=>{ const tx=_db.transaction(["movements","tasks","spools","projects"],"readwrite"); tx.objectStore("movements").clear(); tx.objectStore("tasks").clear(); tx.objectStore("spools").clear(); tx.objectStore("projects").clear(); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
   async function sha256(text){ const enc=new TextEncoder().encode(text); const hash = await crypto.subtle.digest("SHA-256", enc); return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,"0")).join(""); }
 
   return {
-    open, MATERIALS, GRAM_OPTIONS,
+    open, MATERIALS, GRAM_OPTIONS, DEFAULT_RATES,
     addMovement, listMovements, getMovementStats, getMostUsedMaterial,
-    editMovement, deleteMovement, archiveMovement, unarchiveMovement,
+    getMovement, editMovement, deleteMovement, archiveMovement, unarchiveMovement,
     addTask, listTasks, toggleTask, editTask, deleteTask, archiveTask, unarchiveTask,
     addSpool, addMultipleSpools, listSpools, getSpoolStats, getSpool, addSpoolStock, consumeSpool, editSpool, archiveSpool, unarchiveSpool,
+    addProject, listProjects, getProject, editProject, deleteProject, archiveProject, unarchiveProject,
+    getRate, getAllRates, saveAllRates,
     setMeta, getMeta, exportAll, importAll, clearAll
   };
 })();

@@ -32,11 +32,9 @@
       </header>
 
       <main id="pages">
-        <!-- MOVIMENTI -->
+        <!-- ==================== MOVIMENTI ==================== -->
         <section id="page-movimenti" class="page active" aria-label="Movimenti">
-          <!-- NUOVO FORM A TAB -->
           <div class="card form-card">
-            <!-- Tab selector -->
             <div class="form-tabs">
               <button type="button" class="form-tab" data-tab="sale">💰 Vendita</button>
               <button type="button" class="form-tab" data-tab="expense">💸 Spesa</button>
@@ -47,35 +45,53 @@
             <form id="form-sale" class="mov-form">
               <div class="form-section">
                 <h3 class="form-section-title">Dati Vendita</h3>
-                
                 <div class="row">
                   <label for="sale-customer">Cliente</label>
                   <input id="sale-customer" type="text" placeholder="Nome cliente (opzionale)">
                 </div>
-                
                 <div class="row">
                   <label for="sale-item">Oggetto *</label>
                   <input id="sale-item" type="text" maxlength="120" placeholder="es. Supporto telefono" required>
                 </div>
-                
                 <div class="row">
                   <label for="sale-desc">Descrizione</label>
                   <input id="sale-desc" type="text" maxlength="160" placeholder="es. Vendita in fiera">
                 </div>
-                
                 <div class="row">
                   <label for="sale-amount">Importo ricevuto (€) *</label>
                   <input id="sale-amount" inputmode="decimal" type="text" step="0.01" min="0.01" placeholder="es. 120.50" required>
                 </div>
-                
                 <div class="row">
                   <label for="sale-date">Data</label>
                   <input id="sale-date" type="date" required>
                 </div>
               </div>
               
+              <!-- Progetti collegati -->
               <div class="form-section">
-                <h3 class="form-section-title">Materiale Usato (opzionale)</h3>
+                <h3 class="form-section-title">Progetti Collegate (opzionale)</h3>
+                <div id="sale-projects-container">
+                  <div class="sale-project-row">
+                    <select class="sale-project-select"><option value="">— Seleziona progetto —</option></select>
+                    <button type="button" class="btn-remove-project" hidden>−</button>
+                  </div>
+                </div>
+                <button type="button" id="btn-add-project-sale" class="btn-add-row">+ Aggiungi progetto</button>
+                <div id="sale-projects-info" hidden>
+                  <div class="sale-projects-summary">
+                    <span>Costo totale progetti:</span>
+                    <strong id="sale-projects-cost">€ 0.00</strong>
+                  </div>
+                  <div class="sale-price-suggestion" id="sale-price-suggestion" hidden>
+                    <span class="suggestion-label">💡 Prezzo consigliato</span>
+                    <span class="suggestion-value" id="sale-suggested-price">€ 0.00</span>
+                    <span class="suggestion-desc" id="sale-suggestion-desc"></span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="form-section" id="sale-filament-section">
+                <h3 class="form-section-title">Materiale Usato (opzionale, se progetti selezionati si auto-compila)</h3>
                 <div id="filament-rows"></div>
                 <button type="button" id="btn-add-filament" class="btn-add-row">+ Aggiungi filamento</button>
                 <div id="filament-total" hidden>
@@ -93,33 +109,28 @@
             <form id="form-expense" class="mov-form">
               <div class="form-section">
                 <h3 class="form-section-title">Dati Spesa</h3>
-                
                 <div class="row">
                   <label for="expense-desc">Descrizione *</label>
                   <input id="expense-desc" type="text" maxlength="160" placeholder="es. Nuova stampante, componenti, riparazioni..." required>
                 </div>
-                
                 <div class="row">
                   <label for="expense-amount">Importo (€) *</label>
                   <input id="expense-amount" inputmode="decimal" type="text" step="0.01" min="0.01" placeholder="es. 50.00" required>
                 </div>
-                
                 <div class="row">
                   <label for="expense-date">Data</label>
                   <input id="expense-date" type="date" required>
                 </div>
               </div>
-              
               <div class="row actions">
                 <button type="submit" class="btn primary danger" id="btn-expense-submit">Registra Spesa</button>
               </div>
             </form>
             
-            <!-- TAB ACQUISTO MATERIALE -->
+            <!-- TAB ACQUISTO -->
             <form id="form-purchase" class="mov-form">
               <div class="form-section">
                 <h3 class="form-section-title">Acquisto Filamento</h3>
-                
                 <div class="row">
                   <label>Numero bobine</label>
                   <div class="spool-spinner">
@@ -128,33 +139,26 @@
                     <button type="button" id="spool-count-plus">+</button>
                   </div>
                 </div>
-                
-                <!-- Container per le bobine -->
                 <div id="purchase-spools-container"></div>
-                
                 <div class="row">
                   <label for="purchase-shipping">Costo spedizione (€)</label>
                   <input id="purchase-shipping" inputmode="decimal" type="text" step="0.01" min="0" placeholder="es. 5.00" value="0">
                 </div>
-                
                 <div class="row">
                   <label for="purchase-date">Data</label>
                   <input id="purchase-date" type="date" required>
                 </div>
-                
                 <div class="purchase-total">
                   <span>Totale calcolato:</span>
                   <strong id="purchase-total-value">€ 0.00</strong>
                 </div>
               </div>
-              
               <div class="row actions">
                 <button type="submit" class="btn primary" id="btn-purchase-submit">Registra Acquisto</button>
               </div>
             </form>
           </div>
 
-          <!-- SECONDO RIQUADRO -->
           <div class="card">
             <div class="toolbar">
               <select id="mov-filter" aria-label="Modalità elenco">
@@ -164,13 +168,133 @@
                 <option value="purchase">Acquisti</option>
               </select>
               <label class="chk"><input type="checkbox" id="mov-show-arch" checked> Archiviati</label>
-              <div class="saldo">Saldo: <strong id="saldo">€ 0.00</strong></div>
+              <div class="saldo"><strong id="saldo">€ 0.00</strong></div>
             </div>
             <ul id="mov-list" class="list"></ul>
           </div>
         </section>
 
-        <!-- MAGAZZINO -->
+        <!-- ==================== PROGETTI ==================== -->
+        <section id="page-progetti" class="page" aria-label="Progetti">
+          <div class="card form-card">
+            <div class="form-tabs">
+              <button type="button" class="form-tab active" data-subtab="new">➕ Nuovo</button>
+              <button type="button" class="form-tab" data-subtab="list">📋 Storico</button>
+            </div>
+            
+            <!-- SUBTAB: Nuovo Progetto -->
+            <div id="subtab-new" class="mov-form active">
+              <form id="form-project">
+                <div class="form-section">
+                  <h3 class="form-section-title">Dati Progetto</h3>
+                  <div class="row">
+                    <label for="project-name">Nome progetto *</label>
+                    <input id="project-name" type="text" maxlength="120" placeholder="es. Supporto telefono" required>
+                  </div>
+                  <div class="row">
+                    <label for="project-desc">Descrizione</label>
+                    <input id="project-desc" type="text" maxlength="200" placeholder="es. Progetto personalizzato per cliente">
+                  </div>
+                  <div class="row">
+                    <label>Foto (opzionale)</label>
+                    <div class="photo-upload">
+                      <input id="project-photo-input" type="file" accept="image/*" hidden>
+                      <button type="button" id="btn-project-photo" class="btn photo-btn">📷 Carica foto</button>
+                      <img id="project-photo-preview" class="photo-preview" hidden>
+                      <button type="button" id="btn-project-photo-remove" class="btn photo-remove" hidden>✕</button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="form-section">
+                  <h3 class="form-section-title">Filamenti Usati</h3>
+                  <div id="project-filaments-container">
+                    <div class="project-filament-row">
+                      <select class="project-filament-spool"><option value="">— nessuno —</option></select>
+                      <input class="project-filament-grams" type="number" min="1" placeholder="g" disabled>
+                      <span class="project-filament-cost"></span>
+                      <button type="button" class="btn-filament-remove" hidden>−</button>
+                    </div>
+                  </div>
+                  <button type="button" id="btn-add-project-filament" class="btn-add-row">+ Aggiungi filamento</button>
+                </div>
+                
+                <div class="form-section">
+                  <h3 class="form-section-title">Tempo e Costi</h3>
+                  <div class="row">
+                    <label for="project-print-time">Tempo stampa (ore)</label>
+                    <input id="project-print-time" type="number" min="0" step="0.5" placeholder="es. 5" value="0">
+                  </div>
+                  <div class="row">
+                    <label for="project-labor">Manodopera (minuti)</label>
+                    <input id="project-labor" type="number" min="0" step="5" placeholder="es. 20" value="0">
+                  </div>
+                </div>
+                
+                <div class="form-section">
+                  <h3 class="form-section-title">Tariffe</h3>
+                  <div class="rates-note">✏️ Valori predefiniti dalle impostazioni. Modificarli qui li cambia solo per questo progetto.</div>
+                  <div class="rates-grid">
+                    <div class="rate-item">
+                      <label>Elettricità (€/kWh)</label>
+                      <input class="project-rate" id="project-rate-electricity" type="number" step="0.01" min="0">
+                    </div>
+                    <div class="rate-item">
+                      <label>Consumo stampante (W)</label>
+                      <input class="project-rate" id="project-rate-watt" type="number" step="1" min="0">
+                    </div>
+                    <div class="rate-item">
+                      <label>Manodopera (€/h)</label>
+                      <input class="project-rate" id="project-rate-labor" type="number" step="0.5" min="0">
+                    </div>
+                    <div class="rate-item">
+                      <label>Margine (%)</label>
+                      <input class="project-rate" id="project-rate-margin" type="number" step="1" min="0" max="200">
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="project-calculation card">
+                  <div class="calc-row"><span>💰 Costo materiale</span><strong id="calc-material">€ 0.00</strong></div>
+                  <div class="calc-row"><span>⚡ Elettricità</span><strong id="calc-electricity">€ 0.00</strong></div>
+                  <div class="calc-row"><span>🛠️ Manodopera</span><strong id="calc-labor">€ 0.00</strong></div>
+                  <div class="calc-divider"></div>
+                  <div class="calc-row total"><span>COSTO TOTALE</span><strong id="calc-total">€ 0.00</strong></div>
+                  <div class="calc-divider"></div>
+                  <div class="calc-row suggested"><span>💲 Prezzo consigliato <small>(+<span id="calc-margin-display">30</span>%)</small></span><strong id="calc-suggested">€ 0.00</strong></div>
+                </div>
+                
+                <div class="row actions">
+                  <button type="submit" class="btn primary" id="btn-project-save">💾 Salva Progetto</button>
+                  <button type="button" class="btn" id="btn-project-reset">Annulla</button>
+                </div>
+              </form>
+            </div>
+            
+            <!-- SUBTAB: Storico -->
+            <div id="subtab-list" class="mov-form">
+              <div class="toolbar">
+                <label class="chk"><input type="checkbox" id="proj-show-arch"> Archiviati</label>
+                <button type="button" id="btn-project-new" class="btn primary">➕ Nuovo progetto</button>
+              </div>
+              <ul id="project-list" class="list"></ul>
+              
+              <!-- Modale modifica progetto -->
+              <div id="project-edit-modal" class="modal-overlay" hidden>
+                <div class="card modal-card">
+                  <h3 style="margin:0 0 12px;">Modifica Progetto</h3>
+                  <div id="project-edit-content"></div>
+                  <div class="row actions" style="margin-top:12px;">
+                    <button type="button" id="btn-edit-save" class="btn primary">💾 Salva</button>
+                    <button type="button" id="btn-edit-close" class="btn">Chiudi</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== MAGAZZINO ==================== -->
         <section id="page-magazzino" class="page" aria-label="Magazzino">
           <div class="card">
             <div class="toolbar">
@@ -179,8 +303,6 @@
             </div>
             <ul id="spool-list" class="list"></ul>
           </div>
-          
-          <!-- Statistiche magazzino -->
           <div class="card stats-card">
             <h3 class="stats-title">📊 Riepilogo Magazzino</h3>
             <div class="stats-grid">
@@ -204,9 +326,9 @@
           </div>
         </section>
 
-        <!-- TO-DO -->
+        <!-- ==================== TO-DO ==================== -->
         <section id="page-todo" class="page" aria-label="To-Do">
-          <form id="todo-form" class="card form">
+          <form id="todo-form" class="card form-card">
             <div class="row">
               <label for="todo-desc">Attività</label>
               <input id="todo-desc" type="text" maxlength="140" placeholder="es. Chiamare cliente..." required>
@@ -225,7 +347,6 @@
               <button type="button" id="btn-archive-done" class="btn">Archivia completate</button>
             </div>
           </form>
-
           <div class="card">
             <div class="toolbar">
               <label class="chk"><input type="checkbox" id="todo-show-arch" checked> Archiviati</label>
@@ -234,7 +355,7 @@
           </div>
         </section>
 
-        <!-- ANALISI -->
+        <!-- ==================== ANALISI ==================== -->
         <section id="page-analisi" class="page" aria-label="Analisi">
           <div class="card">
             <div class="toolbar">
@@ -254,7 +375,6 @@
             </div>
           </div>
           
-          <!-- Grafico Flusso di Cassa -->
           <div class="card chart-card">
             <h3 class="chart-title">📈 Flusso di Cassa</h3>
             <div class="chart-container">
@@ -267,7 +387,6 @@
             </div>
           </div>
           
-          <!-- Statistiche principali -->
           <div class="stats-cards-row">
             <div class="card stat-card">
               <div class="stat-icon success">💰</div>
@@ -292,7 +411,6 @@
             </div>
           </div>
           
-          <!-- Spesa Filamento -->
           <div class="card">
             <h3 class="section-title">📦 Spesa Filamento</h3>
             <div class="info-grid">
@@ -301,7 +419,7 @@
                 <span class="info-value" id="stat-bobine">0</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Materiale consumato <small class="info-sublabel">(nelle vendite)</small></span>
+                <span class="info-label">Materiale consumato</span>
                 <span class="info-value" id="stat-materiale">€ 0.00</span>
               </div>
               <div class="info-item">
@@ -309,13 +427,12 @@
                 <span class="info-value" id="stat-spedizione">€ 0.00</span>
               </div>
               <div class="info-item highlight">
-                <span class="info-label">Totale investito <small class="info-sublabel">(acquisti + spedizione)</small></span>
+                <span class="info-label">Totale investito</span>
                 <span class="info-value" id="stat-totale-filamento">€ 0.00</span>
               </div>
             </div>
           </div>
           
-          <!-- Stampe Totali -->
           <div class="card">
             <h3 class="section-title">🖨️ Stampe Totali</h3>
             <div class="info-grid">
@@ -330,10 +447,9 @@
             </div>
           </div>
           
-          <!-- Grafico Profitto -->
           <div class="card chart-card">
             <h3 class="chart-title">📈 Profitto Lordo</h3>
-            <p class="chart-note">Formula: <strong>Vendite − Costo materiale usato = Profitto Lordo</strong><br>Non include spese generali o acquisti di bobine. Mostra quanto guadagni al netto del filamento consumato.</p>
+            <p class="chart-note">Formula: <strong>Vendite − Costo materiale usato = Profitto Lordo</strong><br>Mostra quanto guadagni al netto del filamento consumato.</p>
             <div class="chart-container">
               <canvas id="chart-profit"></canvas>
             </div>
@@ -343,7 +459,6 @@
             </div>
           </div>
           
-          <!-- Più Usato -->
           <div class="card">
             <h3 class="section-title">🏆 Più Usato</h3>
             <div class="info-grid">
@@ -360,10 +475,13 @@
         </section>
       </main>
 
-      <!-- Bottom Bar -->
+      <!-- Bottom Bar (5 tab) -->
       <nav class="bottom-bar" role="tablist">
         <button class="tab active" data-target="page-movimenti" aria-label="Movimenti">
           <span class="icon icon-mov"></span><span>Movimenti</span>
+        </button>
+        <button class="tab" data-target="page-progetti" aria-label="Progetti">
+          <span class="icon icon-proj"></span><span>Progetti</span>
         </button>
         <button class="tab" data-target="page-magazzino" aria-label="Magazzino">
           <span class="icon icon-warehouse"></span><span>Magazzino</span>
@@ -386,12 +504,47 @@
         <div class="row" style="align-items:center;">
           <label>Tema</label>
           <div class="theme-picker">
-            <button type="button" class="theme-swatch" data-theme="system" style="background:#007AFF;" title="Blu"></button>
+            <button type="button" class="theme-swatch" data-theme="system" style="background:#007AFF;" title="Sistema (Blu)"></button>
             <button type="button" class="theme-swatch" data-theme="teal" style="background:#0096C7;" title="Turchese"></button>
             <button type="button" class="theme-swatch" data-theme="purple" style="background:#AF52DE;" title="Viola"></button>
           </div>
         </div>
 
+        <hr style="margin:12px 0;">
+        <h3 style="margin:0 0 8px;font-size:.95rem;">🧮 Tariffe Calcolo Prezzi</h3>
+        <div class="rates-settings-grid">
+          <div class="rate-setting">
+            <label for="rate-electricity">Elettricità (€/kWh)</label>
+            <input id="rate-electricity" type="number" step="0.01" min="0" value="0.25">
+          </div>
+          <div class="rate-setting">
+            <label for="rate-watt">Consumo stampante (W)</label>
+            <input id="rate-watt" type="number" step="1" min="0" value="200">
+          </div>
+          <div class="rate-setting">
+            <label for="rate-labor">Tariffa manodopera (€/h)</label>
+            <input id="rate-labor" type="number" step="0.5" min="0" value="15">
+          </div>
+          <div class="rate-setting">
+            <label for="rate-printer-cost">Costo stampante (€)</label>
+            <input id="rate-printer-cost" type="number" step="1" min="0" value="300">
+          </div>
+          <div class="rate-setting">
+            <label for="rate-printer-life">Vita stampante (ore)</label>
+            <input id="rate-printer-life" type="number" step="100" min="1" value="5000">
+          </div>
+          <div class="rate-setting">
+            <label for="rate-margin">Margine default (%)</label>
+            <input id="rate-margin" type="number" step="1" min="0" max="200" value="30">
+          </div>
+          <div class="rate-setting">
+            <label for="rate-fee">Fee marketplace (%)</label>
+            <input id="rate-fee" type="number" step="1" min="0" max="100" value="15">
+          </div>
+        </div>
+        <div class="row actions">
+          <button type="button" id="btn-save-rates" class="btn primary">💾 Salva tariffe</button>
+        </div>
 
         <hr style="margin:12px 0;">
         <h3 style="margin:0 0 8px;font-size:.95rem;">Gestione Dati</h3>
@@ -400,7 +553,7 @@
           <label class="btn file">&#8681; Importa backup <input id="file-import" type="file" accept=".json" hidden></label>
         </div>
 
-<div class="row actions" style="justify-content:flex-end;margin-top:12px;">
+        <div class="row actions" style="justify-content:flex-end;margin-top:12px;">
           <button value="cancel" class="btn">Chiudi</button>
         </div>
       </form>

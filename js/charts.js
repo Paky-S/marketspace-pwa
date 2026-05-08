@@ -145,24 +145,28 @@ function drawCashFlowChart(canvas, data) {
   });
 }
 
-function drawProfitChart(canvas, data, totalMaterialCost) {
+function drawProfitChart(canvas, data) {
   const ctx = canvas.getContext('2d');
   const colors = getChartColors();
   const isDark = ctx.canvas.ownerDocument.defaultView.matchMedia('(prefers-color-scheme: dark)').matches;
   
-  // Prepare data - profit over time
-  let cumSales = 0, cumMaterial = 0;
+  // Prepare data - cumulative profit over time
+  let balance = 0;
   const profitData = [];
+  // Per-period profit (for bars)
+  const perPeriod = [];
   
   for (const d of data) {
-    cumSales += d.sales;
-    cumMaterial += (d.materialCost || 0);
-    profitData.push(cumSales - cumMaterial);
+    const periodProfit = (d.sales || 0) - (d.materialCost || 0);
+    balance += periodProfit;
+    profitData.push(balance);
+    perPeriod.push(periodProfit);
   }
   
-  // If no data, show single point
+  // If no data, show single zero point
   if (profitData.length === 0) {
     profitData.push(0);
+    perPeriod.push(0);
   }
   
   const labels = data.map(d => {
@@ -171,30 +175,59 @@ function drawProfitChart(canvas, data, totalMaterialCost) {
   });
   if (labels.length === 0) labels.push('Oggi');
   
+  // Adaptive coloring based on final profit
+  const finalProfit = profitData[profitData.length - 1] || 0;
+  const lineColor = finalProfit >= 0 ? colors.success : colors.danger;
+  const fillColor = hexToRgba(lineColor, 0.12);
+  const barPosColor = colors.success;
+  const barNegColor = colors.danger;
+  
   // Destroy existing chart
   if (profitChart) {
     profitChart.destroy();
   }
   
-  // Create chart
+  // Build per-period bar colors
+  const barColors = perPeriod.map(v => v >= 0 ? barPosColor : barNegColor);
+  const barBorderColors = perPeriod.map(v => v >= 0 ? hexToRgba(barPosColor, 0.5) : hexToRgba(barNegColor, 0.5));
+  
+  // Create chart with mixed type
   profitChart = new Chart(ctx, {
-    type: 'line',
+    type: 'bar',
     data: {
       labels: labels,
       datasets: [
         {
-          label: 'Profitto Lordo',
+          label: 'Profitto periodo',
+          data: perPeriod,
+          backgroundColor: barColors,
+          borderColor: barBorderColors,
+          borderWidth: 1,
+          borderRadius: 3,
+          order: 2,
+          yAxisID: 'y1'
+        },
+        {
+          label: 'Profitto cumulativo',
+          type: 'line',
           data: profitData,
-          borderColor: colors.purple,
-          backgroundColor: hexToRgba(colors.purple, 0.2),
+          borderColor: lineColor,
+          backgroundColor: fillColor,
           fill: true,
           tension: 0.4,
           pointRadius: 4,
           pointHoverRadius: 7,
           borderWidth: 3,
-          pointBackgroundColor: colors.purple,
+          pointBackgroundColor: lineColor,
           pointBorderColor: isDark ? '#1C1C1E' : '#FFFFFF',
-          pointBorderWidth: 2
+          pointBorderWidth: 2,
+          pointRadius: (ctx) => {
+            const i = ctx.dataIndex;
+            if (i === profitData.length - 1) return 6;
+            return 3;
+          },
+          order: 1,
+          yAxisID: 'y'
         }
       ]
     },
@@ -219,31 +252,47 @@ function drawProfitChart(canvas, data, totalMaterialCost) {
           cornerRadius: 10,
           callbacks: {
             label: function(context) {
-              return 'Profitto: € ' + context.parsed.y.toFixed(2);
+              if (context.dataset.label === 'Profitto cumulativo') {
+                return 'Cumulativo: € ' + context.parsed.y.toFixed(2);
+              }
+              return 'Periodo: € ' + context.parsed.y.toFixed(2);
             }
           }
         }
       },
       scales: {
         x: {
-          grid: {
-            display: false
-          },
-          ticks: {
-            color: colors.muted,
-            font: { size: 10 }
-          }
+          grid: { display: false },
+          ticks: { color: colors.muted, font: { size: 10 } }
         },
         y: {
-          grid: {
-            color: hexToRgba(colors.border, 0.5)
-          },
+          position: 'left',
+          grid: { color: hexToRgba(colors.border, 0.5) },
           ticks: {
             color: colors.muted,
             font: { size: 10 },
-            callback: function(value) {
-              return '€' + value;
-            }
+            callback: function(v) { return '€' + v; }
+          },
+          title: {
+            display: true,
+            text: 'Cumulativo',
+            color: colors.muted,
+            font: { size: 9 }
+          }
+        },
+        y1: {
+          position: 'right',
+          grid: { display: false },
+          ticks: {
+            color: colors.muted,
+            font: { size: 10 },
+            callback: function(v) { return '€' + v; }
+          },
+          title: {
+            display: true,
+            text: 'Periodo',
+            color: colors.muted,
+            font: { size: 9 }
           }
         }
       }

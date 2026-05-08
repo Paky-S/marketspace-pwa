@@ -1,5 +1,6 @@
 // MarketSpace v1.5 - Nuova versione con form a tab
 let _spoolsCache = [];
+let _projectsCache = [];
 
 const state = {
   version: "0.0.0",
@@ -8,7 +9,10 @@ const state = {
   theme: "system",
   palette: "blue",
   submitMode: "add",
-  purchaseSpoolCount: 1
+  purchaseSpoolCount: 1,
+  projectSubmitMode: "add",
+  editingProjectId: null,
+  _lastUsername: "default"
 };
 
 const PALETTES = {
@@ -141,6 +145,11 @@ async function boot(){
 
     await refreshMovements();
     await refreshTodos();
+    await loadProjectRates();
+    addProjectFilamentRow();
+    populateSaleProjectSelectors();
+    // Inizializza pulsante rimozione nella prima riga progetto
+    syncProjectFilamentUI();
   } catch(e){
     console.error("Boot error:", e);
     alert("Errore in avvio. Fai un hard refresh (Ctrl+F5).");
@@ -213,6 +222,40 @@ function bindEvents(){
   // Analisi
   on($("range"),"change", onRangeChange);
   on($("btn-apply-range"),"click", (e)=>{ e.preventDefault(); renderAnalytics(); });
+
+  // Project sub-tabs
+  document.querySelectorAll("[data-subtab]").forEach(btn => {
+    btn.addEventListener("click", () => switchProjectSubtab(btn.dataset.subtab));
+  });
+
+  // Project form
+  on($("form-project"), "submit", onSaveProject);
+  on($("btn-project-photo"), "click", () => $("project-photo-input").click());
+  on($("project-photo-input"), "change", handleProjectPhoto);
+  on($("btn-project-photo-remove"), "click", removeProjectPhoto);
+  on($("btn-add-project-filament"), "click", addProjectFilamentRow);
+  on($("btn-project-reset"), "click", resetProjectForm);
+  on($("proj-show-arch"), "change", refreshProjectList);
+  on($("btn-project-new"), "click", () => switchProjectSubtab("new"));
+
+  // Project calculation inputs
+  document.querySelectorAll("#form-project input, #form-project select").forEach(el => {
+    if (el.id === "project-photo-input") return;
+    el.addEventListener("input", calculateProjectCost);
+    el.addEventListener("change", calculateProjectCost);
+  });
+
+  // Settings – rates
+  on($("btn-save-rates"), "click", saveRatesSettings);
+
+  // Sale-project integration
+  on($("btn-add-project-sale"), "click", addSaleProjectRow);
+  document.querySelectorAll(".sale-project-select").forEach(sel => {
+    sel.addEventListener("change", updateSaleProjectInfo);
+  });
+
+  // Project edit modal (legacy, close only)
+  on($("btn-edit-close"), "click", () => { $("project-edit-modal").hidden = true; });
 }
 
 function switchPage(id){
@@ -220,11 +263,26 @@ function switchPage(id){
   document.getElementById(id).classList.add("active");
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.querySelector(`.tab[data-target="${id}"]`).classList.add("active");
-  const map = {"page-movimenti":"Movimenti","page-magazzino":"Magazzino","page-todo":"To-Do","page-analisi":"Analisi"};
+  const map = {"page-movimenti":"Movimenti","page-magazzino":"Magazzino","page-todo":"To-Do","page-analisi":"Analisi","page-progetti":"Progetti"};
   document.getElementById("page-title").textContent = map[id]||"MarketSpace";
+  
+  // Company-switch fix: refresh if username changed
+  if (state.username !== state._lastUsername) {
+    state._lastUsername = state.username;
+    refreshMovements();
+    refreshTodos();
+    renderAnalytics();
+    refreshProjectList();
+    refreshSpools();
+    refreshSpoolStats();
+  }
+  
   state.currentPage = id;
+  if (id==="page-movimenti") refreshMovements();
   if (id==="page-analisi") renderAnalytics();
   if (id==="page-magazzino") { refreshSpools(); refreshSpoolStats(); }
+  if (id==="page-progetti") { refreshProjectList(); populateSaleProjectSelectors(); }
+  if (id==="page-todo") refreshTodos();
 }
 
 function switchFormTab(tabName){
@@ -359,7 +417,13 @@ async function onAddSale(ev){
   for (const f of filaments) await DB.consumeSpool(f.spoolId, f.gramsUsed);
   const primary = filaments[0] || null;
 
-  await DB.addMovement({
+  // Collect linked projects
+  const projectIds = [];
+  document.querySelectorAll(".sale-project-select").forEach(sel => {
+    if (sel.value) projectIds.push(Number(sel.value));
+  });
+
+  const movId = await DB.addMovement({
     username:state.username,
     type: 'sale',
     amount,
@@ -372,7 +436,18 @@ async function onAddSale(ev){
     gramsUsed: primary?.gramsUsed||0,
     materialCost: totalMaterialCost,
     filaments,
+    projectIds,
   });
+
+  // Update linked projects
+  for (const pid of projectIds) {
+    const proj = await DB.getProject(pid);
+    if (proj) {
+      const linked = proj.linkedSales || [];
+      linked.push(movId);
+      await DB.editProject(pid, { linkedSales: linked });
+    }
+  }
 
   // Reset form
   document.getElementById("sale-amount").value = "";
@@ -1009,4 +1084,460 @@ function formatGrams(grams){
     return (grams / 1000).toFixed(2) + "kg";
   }
   return grams + "g";
+}
+
+/* ===== PROJECT SUB-TABS ===== */
+function switchProjectSubtab(subtab){
+  document.querySelectorAll("#page-progetti .form-tab").forEach(t => t.classList.remove("active"));
+  document.querySelector(`#page-progetti .form-tab[data-subtab="${subtab}"]`).classList.add("active");
+  document.querySelectorAll("#page-progetti .mov-form").forEach(f => f.classList.remove("active"));
+  document.getElementById(`subtab-${subtab}`).classList.add("active");
+  if (subtab === "list") refreshProjectList();
+  if (subtab === "new") {
+    if (state.projectSubmitMode !== "edit") resetProjectForm();
+    loadProjectRates();
+    populateSaleProjectSelectors();
+  }
+}
+
+/* ===== COST CALCULATOR ===== */
+function getProjectRatesFromForm(){
+  return {
+    electricityRate: Number(document.getElementById("project-rate-electricity").value) || 0,
+    printerWatt: Number(document.getElementById("project-rate-watt").value) || 0,
+    laborRate: Number(document.getElementById("project-rate-labor").value) || 0,
+    margin: Number(document.getElementById("project-rate-margin").value) || 0
+  };
+}
+
+function calculateProjectCost(){
+  let materialCost = 0;
+  document.querySelectorAll("#project-filaments-container .project-filament-row").forEach(row => {
+    const spoolId = Number(row.querySelector(".project-filament-spool").value);
+    const grams = Number(row.querySelector(".project-filament-grams").value);
+    if (spoolId && grams > 0){
+      const spool = _spoolsCache.find(s => s.id === spoolId);
+      if (spool) materialCost += spool.price_per_kg * (grams / 1000);
+    }
+  });
+
+  const rates = getProjectRatesFromForm();
+  const printTime = Number(document.getElementById("project-print-time").value) || 0;
+  const laborMin = Number(document.getElementById("project-labor").value) || 0;
+
+  const electricity = rates.printerWatt > 0 && rates.electricityRate > 0
+    ? (printTime * rates.printerWatt / 1000) * rates.electricityRate : 0;
+  const labor = rates.laborRate > 0 ? (laborMin / 60) * rates.laborRate : 0;
+  const total = materialCost + electricity + labor;
+  const suggested = total * (1 + (rates.margin || 0) / 100);
+
+  document.getElementById("calc-material").textContent = formatCurrency(materialCost);
+  document.getElementById("calc-electricity").textContent = formatCurrency(electricity);
+  document.getElementById("calc-labor").textContent = formatCurrency(labor);
+  document.getElementById("calc-total").textContent = formatCurrency(total);
+  document.getElementById("calc-margin-display").textContent = rates.margin || 0;
+  document.getElementById("calc-suggested").textContent = formatCurrency(suggested);
+
+  return { total, suggested, materialCost, electricity, labor };
+}
+
+/* ===== PROJECT PHOTO ===== */
+function handleProjectPhoto(e){
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) return alert("La foto non può superare i 5 MB.");
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const preview = document.getElementById("project-photo-preview");
+    preview.src = ev.target.result;
+    preview.hidden = false;
+    document.getElementById("btn-project-photo-remove").hidden = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeProjectPhoto(){
+  document.getElementById("project-photo-preview").src = "";
+  document.getElementById("project-photo-preview").hidden = true;
+  document.getElementById("btn-project-photo-remove").hidden = true;
+  document.getElementById("project-photo-input").value = "";
+}
+
+/* ===== PROJECT FILAMENT ROWS ===== */
+function updateProjectFilamentCost(row){
+  const spoolId = Number(row.querySelector(".project-filament-spool").value);
+  const grams = Number(row.querySelector(".project-filament-grams").value);
+  const costEl = row.querySelector(".project-filament-cost");
+  const spool = _spoolsCache.find(s => s.id === spoolId);
+  if (spool && grams > 0){
+    costEl.textContent = "= " + formatCurrency(spool.price_per_kg * (grams / 1000));
+  } else {
+    costEl.textContent = "";
+  }
+}
+
+function createProjectFilamentRow(data){
+  const div = document.createElement("div");
+  div.className = "project-filament-row";
+  const opts = '<option value="">— nessuno —</option>' +
+    _spoolsCache.map(s => `<option value="${s.id}">${s.name||s.material}${s.brand?' - '+s.brand:''} • ${s.grams_available}g • €${Number(s.price_per_kg).toFixed(2)}/kg</option>`).join("");
+  div.innerHTML = `
+    <select class="project-filament-spool">${opts}</select>
+    <input class="project-filament-grams" type="number" min="1" placeholder="g" disabled>
+    <span class="project-filament-cost"></span>
+    <button type="button" class="btn-filament-remove" hidden>−</button>`;
+  if (data) {
+    if (data.spoolId) div.querySelector(".project-filament-spool").value = String(data.spoolId);
+    if (data.gramsUsed) {
+      div.querySelector(".project-filament-grams").value = data.gramsUsed;
+      div.querySelector(".project-filament-grams").disabled = false;
+    }
+    div.querySelector(".btn-filament-remove").hidden = false;
+  }
+  div.querySelector(".project-filament-spool").addEventListener("change", () => {
+    const sel = div.querySelector(".project-filament-spool");
+    const grams = div.querySelector(".project-filament-grams");
+    grams.disabled = !sel.value;
+    if (!grams.disabled) grams.focus();
+    updateProjectFilamentCost(div);
+    calculateProjectCost();
+  });
+  div.querySelector(".project-filament-grams").addEventListener("input", () => {
+    updateProjectFilamentCost(div);
+    calculateProjectCost();
+  });
+  div.querySelector(".btn-filament-remove").addEventListener("click", () => { div.remove(); syncProjectFilamentUI(); calculateProjectCost(); });
+  return div;
+}
+
+function addProjectFilamentRow(data){
+  const container = document.getElementById("project-filaments-container");
+  if (!container || container.children.length >= 6) return;
+  container.appendChild(createProjectFilamentRow(data));
+  syncProjectFilamentUI();
+}
+
+function syncProjectFilamentUI(){
+  const rows = document.querySelectorAll("#project-filaments-container .project-filament-row");
+  const addBtn = document.getElementById("btn-add-project-filament");
+  if (addBtn) addBtn.hidden = rows.length >= 6;
+  rows.forEach((r, i) => {
+    r.querySelector(".btn-filament-remove").hidden = rows.length === 1 && i === 0;
+  });
+}
+
+/* ===== PROJECT CRUD ===== */
+async function onSaveProject(ev){
+  ev.preventDefault();
+  const name = String(document.getElementById("project-name").value||"").trim();
+  const desc = String(document.getElementById("project-desc").value||"").trim();
+  if (!name) return alert("Inserisci il nome del progetto.");
+
+  // Collect filaments
+  const filaments = [];
+  for (const row of document.querySelectorAll("#project-filaments-container .project-filament-row")){
+    const spoolId = Number(row.querySelector(".project-filament-spool").value) || null;
+    if (!spoolId) continue;
+    const grams = Number(row.querySelector(".project-filament-grams").value);
+    if (!grams || grams <= 0) return alert("Inserisci i grammi per ogni filamento selezionato.");
+    const spool = _spoolsCache.find(s => s.id === spoolId);
+    if (!spool) return alert("Bobina non trovata.");
+    filaments.push({spoolId, gramsUsed: grams, cost: spool.price_per_kg * (grams / 1000)});
+  }
+
+  const calc = calculateProjectCost();
+  const rates = getProjectRatesFromForm();
+  const photo = document.getElementById("project-photo-preview").src || "";
+  const printTime = Number(document.getElementById("project-print-time").value) || 0;
+  const laborMinutes = Number(document.getElementById("project-labor").value) || 0;
+
+  if (state.projectSubmitMode === "edit" && state.editingProjectId) {
+    await DB.editProject(state.editingProjectId, {
+      name, description: desc, filaments, printTime, laborMinutes,
+      electricityRate: rates.electricityRate, printerWatt: rates.printerWatt,
+      laborRate: rates.laborRate, margin: rates.margin,
+      totalCost: calc.total, suggestedPrice: calc.suggested, photo,
+      updatedAt: new Date().toISOString()
+    });
+    // Patch linked sales
+    const project = await DB.getProject(state.editingProjectId);
+    if (project?.linkedSales) {
+      for (const saleId of project.linkedSales) {
+        const sale = await DB.getMovement(saleId);
+        if (sale) {
+          await DB.editMovement(saleId, {
+            materialCost: calc.total,
+            filaments: filaments
+          });
+        }
+      }
+    }
+    state.projectSubmitMode = "add";
+    state.editingProjectId = null;
+  } else {
+    await DB.addProject({
+      username: state.username, name, description: desc, filaments,
+      printTime, laborMinutes,
+      electricityRate: rates.electricityRate, printerWatt: rates.printerWatt,
+      laborRate: rates.laborRate, margin: rates.margin,
+      totalCost: calc.total, suggestedPrice: calc.suggested, photo,
+      linkedSales: []
+    });
+  }
+
+  resetProjectForm();
+  await refreshProjectList();
+  await populateSaleProjectSelectors();
+  switchProjectSubtab("list");
+}
+
+async function refreshProjectList(){
+  const showArch = document.getElementById("proj-show-arch").checked;
+  const list = document.getElementById("project-list");
+  list.innerHTML = "";
+  const projects = await DB.listProjects(state.username, showArch);
+  _projectsCache = projects;
+
+  for (const p of projects) {
+    const li = document.createElement("li");
+    if (p.archived) li.classList.add("archived");
+
+    const left = document.createElement("div");
+    left.className = "item-main";
+
+    const dateStr = new Intl.DateTimeFormat("it-IT").format(new Date(p.createdAt));
+    const photoEl = p.photo ? `<img src="${p.photo}" class="project-thumb" alt="">` : "";
+
+    left.innerHTML = `
+      <div class="item-title">${photoEl} <strong>${p.name}</strong></div>
+      <div class="item-sub">${p.description || '—'} • ${dateStr}</div>
+      <div class="item-meta">💰 ${formatCurrency(p.totalCost)} • 💲 ${formatCurrency(p.suggestedPrice)}${p.filaments && p.filaments.length ? ` • 🧵 ${p.filaments.length} filamento/i` : ''}</div>
+    `;
+
+    const right = document.createElement("div");
+    right.className = "item-actions";
+
+    const mkBtn = (title, icon, handler) => {
+      const b = document.createElement("button");
+      b.className = "icon-btn icon-only";
+      b.title = title;
+      b.appendChild($ico(icon));
+      b.addEventListener("click", handler);
+      return b;
+    };
+
+    const editBtn = mkBtn("Modifica", "edit", () => openProjectEdit(p.id));
+    const archBtn = mkBtn(p.archived ? "Ripristina" : "Archivia", p.archived ? "undo" : "archive", async () => {
+      if (p.archived) await DB.unarchiveProject(p.id);
+      else await DB.archiveProject(p.id);
+      await refreshProjectList();
+    });
+    const delBtn = mkBtn("Elimina", "trash", async () => {
+      if (!confirm(`Eliminare il progetto "${p.name}" definitivamente?`)) return;
+      await DB.deleteProject(p.id);
+      await refreshProjectList();
+    });
+
+    right.append(editBtn, archBtn, delBtn);
+    li.append(left, right);
+    list.appendChild(li);
+  }
+}
+
+/* ===== PROJECT EDIT ===== */
+async function openProjectEdit(id){
+  const p = await DB.getProject(id);
+  if (!p) return alert("Progetto non trovato.");
+
+  state.projectSubmitMode = "edit";
+  state.editingProjectId = id;
+
+  switchProjectSubtab("new");
+
+  document.getElementById("project-name").value = p.name || "";
+  document.getElementById("project-desc").value = p.description || "";
+  document.getElementById("project-print-time").value = p.printTime || 0;
+  document.getElementById("project-labor").value = p.laborMinutes || 0;
+  document.getElementById("project-rate-electricity").value = p.electricityRate || "";
+  document.getElementById("project-rate-watt").value = p.printerWatt || "";
+  document.getElementById("project-rate-labor").value = p.laborRate || "";
+  document.getElementById("project-rate-margin").value = p.margin || "";
+
+  if (p.photo) {
+    const preview = document.getElementById("project-photo-preview");
+    preview.src = p.photo;
+    preview.hidden = false;
+    document.getElementById("btn-project-photo-remove").hidden = false;
+  }
+
+  const container = document.getElementById("project-filaments-container");
+  container.innerHTML = "";
+  if (p.filaments && p.filaments.length > 0) {
+    for (const f of p.filaments) addProjectFilamentRow(f);
+  } else {
+    addProjectFilamentRow();
+  }
+
+  calculateProjectCost();
+  document.getElementById("btn-project-save").textContent = "💾 Aggiorna Progetto";
+}
+
+function resetProjectForm(){
+  state.projectSubmitMode = "add";
+  state.editingProjectId = null;
+  document.getElementById("form-project").reset();
+  document.getElementById("project-filaments-container").innerHTML = "";
+  addProjectFilamentRow();
+  removeProjectPhoto();
+  loadProjectRates();
+  calculateProjectCost();
+  document.getElementById("btn-project-save").textContent = "💾 Salva Progetto";
+}
+
+/* ===== RATES ===== */
+async function loadProjectRates(){
+  const rates = await DB.getAllRates();
+  const electricity = document.getElementById("project-rate-electricity");
+  const watt = document.getElementById("project-rate-watt");
+  const labor = document.getElementById("project-rate-labor");
+  const margin = document.getElementById("project-rate-margin");
+  if (electricity && !electricity.value) electricity.value = rates.electricityRate || 0.25;
+  if (watt && !watt.value) watt.value = rates.printerWatt || 200;
+  if (labor && !labor.value) labor.value = rates.laborRate || 15;
+  if (margin && !margin.value) margin.value = rates.defaultMargin || 30;
+  calculateProjectCost();
+}
+
+async function loadRatesSettings(){
+  const rates = await DB.getAllRates();
+  const map = {
+    "rate-electricity": "electricityRate",
+    "rate-watt": "printerWatt",
+    "rate-labor": "laborRate",
+    "rate-printer-cost": "printerCost",
+    "rate-printer-life": "printerLifespan",
+    "rate-margin": "defaultMargin",
+    "rate-fee": "marketplaceFee"
+  };
+  for (const [id, key] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    if (el && rates[key] !== undefined) el.value = rates[key];
+  }
+}
+
+async function saveRatesSettings(){
+  const rates = {
+    electricityRate: Number(document.getElementById("rate-electricity").value) || 0.25,
+    printerWatt: Number(document.getElementById("rate-watt").value) || 200,
+    laborRate: Number(document.getElementById("rate-labor").value) || 15,
+    printerCost: Number(document.getElementById("rate-printer-cost").value) || 300,
+    printerLifespan: Number(document.getElementById("rate-printer-life").value) || 5000,
+    defaultMargin: Number(document.getElementById("rate-margin").value) || 30,
+    marketplaceFee: Number(document.getElementById("rate-fee").value) || 15
+  };
+  await DB.saveAllRates(rates);
+  alert("Tariffe salvate.");
+}
+
+/* ===== SALE-PROJECT INTEGRATION ===== */
+async function populateSaleProjectSelectors(){
+  const projects = await DB.listProjects(state.username, false);
+  const opts = '<option value="">— Seleziona progetto —</option>' +
+    projects.map(p => `<option value="${p.id}">${p.name} — ${formatCurrency(p.totalCost)}</option>`).join("");
+  document.querySelectorAll(".sale-project-select").forEach(sel => {
+    const prev = sel.value;
+    sel.innerHTML = opts;
+    if (prev) sel.value = prev;
+  });
+}
+
+function createSaleProjectRow(){
+  const div = document.createElement("div");
+  div.className = "sale-project-row";
+  div.innerHTML = `
+    <select class="sale-project-select"><option value="">— Seleziona progetto —</option></select>
+    <button type="button" class="btn-remove-project" hidden>−</button>`;
+  div.querySelector(".sale-project-select").addEventListener("change", updateSaleProjectInfo);
+  div.querySelector(".btn-remove-project").addEventListener("click", () => { div.remove(); syncSaleProjectUI(); updateSaleProjectInfo(); });
+  return div;
+}
+
+function addSaleProjectRow(){
+  const container = document.getElementById("sale-projects-container");
+  if (!container) return;
+  const row = createSaleProjectRow();
+  container.appendChild(row);
+  populateSaleProjectSelectors();
+  syncSaleProjectUI();
+}
+
+function syncSaleProjectUI(){
+  const rows = document.querySelectorAll(".sale-project-row");
+  rows.forEach((r, i) => {
+    r.querySelector(".btn-remove-project").hidden = rows.length <= 1;
+  });
+}
+
+async function updateSaleProjectInfo(){
+  const info = document.getElementById("sale-projects-info");
+  const suggestion = document.getElementById("sale-price-suggestion");
+  const costEl = document.getElementById("sale-projects-cost");
+  const suggestedEl = document.getElementById("sale-suggested-price");
+  const descEl = document.getElementById("sale-suggestion-desc");
+
+  let totalCost = 0, hasProjects = false;
+
+  for (const sel of document.querySelectorAll(".sale-project-select")) {
+    if (!sel.value) continue;
+    hasProjects = true;
+    const p = await DB.getProject(Number(sel.value));
+    if (p) {
+      totalCost += p.totalCost || 0;
+      // Auto-fill filaments from first selected project if none set yet
+      const container = document.getElementById("filament-rows");
+      const existingRows = container.querySelectorAll(".filament-row");
+      const hasData = [...existingRows].some(r => r.querySelector(".filament-spool").value);
+      if (!hasData && p.filaments && p.filaments.length > 0) {
+        container.innerHTML = "";
+        for (const f of p.filaments) {
+          const row = createFilamentRow();
+          if (f.spoolId) {
+            row.querySelector(".filament-spool").value = String(f.spoolId);
+            onFilamentRowChange(row);
+          }
+          if (f.gramsUsed) {
+            row.querySelector(".filament-grams").value = f.gramsUsed || "";
+            updateFilamentRowCost(row);
+          }
+          container.appendChild(row);
+        }
+        syncFilamentUI();
+        updateFilamentTotal();
+      }
+    }
+  }
+
+  if (hasProjects) {
+    info.hidden = false;
+    costEl.textContent = formatCurrency(totalCost);
+    const rates = await DB.getAllRates();
+    const suggestedPrice = totalCost * (1 + (rates.defaultMargin || 30) / 100);
+    suggestedEl.textContent = formatCurrency(suggestedPrice);
+    descEl.textContent = `Costo + ${rates.defaultMargin || 30}% margine`;
+    suggestion.hidden = false;
+  } else {
+    info.hidden = true;
+    suggestion.hidden = true;
+  }
+}
+
+/* ===== LOAD RATES ON SETTINGS OPEN ===== */
+// Patch settings open to load rates
+const _origSettingsClick = document.getElementById("btn-settings")?.click;
+const _settingsBtn = document.getElementById("btn-settings");
+if (_settingsBtn) {
+  const origHandler = _settingsBtn.click;
+  _settingsBtn.addEventListener("click", () => {
+    setTimeout(loadRatesSettings, 50);
+  });
 }

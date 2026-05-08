@@ -8,6 +8,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <title>MarketSpace</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
@@ -21,12 +22,104 @@
       </div>
     </div>
 
+    <!-- ══════════════════════════════════════════════════════════════════
+         SCHERMATA AUTH (Login / Registrazione)
+    ══════════════════════════════════════════════════════════════════ -->
+    <div id="screen-auth" hidden>
+      <div class="auth-wrap">
+        <div class="auth-card">
+          <div class="auth-logo">MarketSpace</div>
+          <p class="auth-subtitle">Gestione finanziaria per la tua stampa 3D</p>
+
+          <div class="auth-tabs">
+            <button class="auth-tab active" data-auth="login">Accedi</button>
+            <button class="auth-tab" data-auth="register">Crea account</button>
+          </div>
+
+          <form id="form-login" class="auth-form">
+            <div class="auth-field">
+              <label>Username</label>
+              <input id="login-username" type="text" placeholder="Il tuo username" autocomplete="username" required>
+            </div>
+            <div class="auth-field">
+              <label>Password</label>
+              <input id="login-password" type="password" placeholder="La tua password" autocomplete="current-password" required>
+            </div>
+            <div id="login-error" class="auth-error"></div>
+            <button type="submit" class="btn primary auth-btn">Accedi</button>
+          </form>
+
+          <form id="form-register" class="auth-form" hidden>
+            <div class="auth-field">
+              <label>Scegli uno username</label>
+              <input id="reg-username" type="text" placeholder="es. mario_rossi" autocomplete="username" required>
+            </div>
+            <div class="auth-field">
+              <label>Password</label>
+              <input id="reg-password" type="password" placeholder="Minimo 6 caratteri" autocomplete="new-password" required>
+            </div>
+            <div class="auth-field">
+              <label>Ripeti password</label>
+              <input id="reg-password2" type="password" placeholder="Ripeti la password" autocomplete="new-password" required>
+            </div>
+            <div id="reg-error" class="auth-error"></div>
+            <button type="submit" class="btn primary auth-btn">Crea account</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         SCHERMATA SELEZIONE ATTIVITÀ
+    ══════════════════════════════════════════════════════════════════ -->
+    <div id="screen-activity" hidden>
+      <header class="act-header">
+        <span class="act-logo">MarketSpace</span>
+        <div class="act-user-bar">
+          <span id="act-username-display" class="act-username"></span>
+          <button id="btn-logout" class="btn-link-sm">Esci</button>
+        </div>
+      </header>
+
+      <div class="act-content">
+        <h2 class="act-title">Le tue attività</h2>
+        <p class="act-subtitle muted">Seleziona un'attività oppure creane una nuova</p>
+
+        <div id="activity-list" class="act-list"></div>
+
+        <div class="act-actions">
+          <button id="btn-create-activity" class="btn primary">+ Crea nuova attività</button>
+          <button id="btn-join-activity" class="btn">🔑 Entra con codice invito</button>
+        </div>
+
+        <div id="activity-error" class="auth-error" style="margin-top:12px;"></div>
+
+        <div id="create-activity-form" class="inline-form" hidden>
+          <input id="new-activity-name" type="text" placeholder="Nome attività (es. Stampa3D Rossi)" maxlength="60">
+          <div class="inline-form-btns">
+            <button id="btn-create-confirm" class="btn primary">Crea</button>
+            <button id="btn-create-cancel" class="btn">Annulla</button>
+          </div>
+        </div>
+
+        <div id="join-activity-form" class="inline-form" hidden>
+          <input id="invite-code-input" type="text" placeholder="Codice a 6 lettere (es. AB1C2D)" maxlength="6" style="text-transform:uppercase;letter-spacing:4px;">
+          <div class="inline-form-btns">
+            <button id="btn-join-confirm" class="btn primary">Invia richiesta</button>
+            <button id="btn-join-cancel" class="btn">Annulla</button>
+          </div>
+          <p class="muted" style="font-size:.8rem;margin-top:6px;">Riceverai l'accesso quando un socio approverà la tua richiesta.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- App -->
     <div id="app" hidden>
       <header class="app-header">
         <h1 id="page-title">Movimenti</h1>
         <div class="header-actions">
-          <button id="btn-settings" class="icon-btn" title="Impostazioni">⚙️</button>
+          <button id="btn-change-activity" class="icon-btn" title="Cambia attività">🏢</button>
+          <button id="btn-settings" class="icon-btn" title="Impostazioni">⚙️<span id="settings-badge" class="notif-badge" hidden></span></button>
         </div>
         <div class="version-badge" id="version-badge"></div>
       </header>
@@ -498,8 +591,8 @@
     <!-- Settings Modal -->
     <dialog id="dlg-settings">
       <form method="dialog" class="card" style="max-width:520px;">
-        <h2 style="margin:0 0 8px;">Impostazioni</h2>
-        <p class="muted" style="margin:0 0 12px;">Preferenze dell'app</p>
+        <h2 style="margin:0 0 4px;">Impostazioni</h2>
+        <p class="muted" id="settings-activity-name" style="margin:0 0 12px;font-size:.85rem;"></p>
 
         <div class="row" style="align-items:center;">
           <label>Tema</label>
@@ -547,6 +640,26 @@
         </div>
 
         <hr style="margin:12px 0;">
+        <h3 style="margin:0 0 8px;font-size:.95rem;">👥 Soci dell'attività</h3>
+
+        <div class="row actions" style="margin-bottom:8px;">
+          <button type="button" id="btn-gen-invite" class="btn">🔑 Genera codice invito</button>
+        </div>
+        <div id="invite-code-display" class="invite-code-box" hidden>
+          <span class="invite-code-label">Codice (valido 10 min):</span>
+          <strong id="invite-code-value" class="invite-code-text"></strong>
+          <span id="invite-code-timer" class="invite-code-timer"></span>
+        </div>
+
+        <div id="pending-requests-section" hidden>
+          <p style="margin:8px 0 4px;font-size:.85rem;font-weight:600;">📬 Richieste di accesso</p>
+          <ul id="pending-requests-list" class="requests-list"></ul>
+        </div>
+
+        <p style="margin:8px 0 4px;font-size:.85rem;font-weight:600;">Membri</p>
+        <ul id="members-list" class="members-list"></ul>
+
+        <hr style="margin:12px 0;">
         <h3 style="margin:0 0 8px;font-size:.95rem;">Gestione Dati</h3>
         <div class="row actions">
           <button type="button" id="btn-export" class="btn">&#8679; Esporta backup</button>
@@ -559,9 +672,11 @@
       </form>
     </dialog>
 
+    <script src="js/config.js"></script>
     <script src="js/db.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/activity.js"></script>
     <script src="js/charts.js"></script>
-    <script src="js/adapters/remoteAdapter.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>

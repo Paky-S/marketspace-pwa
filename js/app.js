@@ -1,10 +1,12 @@
-// MarketSpace v1.5 - Nuova versione con form a tab
+// MarketSpace v2.0 - Multi-tenant cloud
 let _spoolsCache = [];
+let _sb = null; // Supabase client
+let _inviteTimer = null; // timer countdown codice invito
 let _projectsCache = [];
 
 const state = {
   version: "0.0.0",
-  username: "default",
+  username: "",
   currentPage: "page-movimenti",
   theme: "system",
   palette: "blue",
@@ -14,6 +16,26 @@ const state = {
   editingProjectId: null,
   _lastUsername: "default"
 };
+
+/* ===== SUPABASE INIT ===== */
+function initSupabase(){
+  if (typeof supabase === "undefined" || !supabase.createClient) {
+    alert("Errore: libreria Supabase non caricata. Verifica la connessione internet.");
+    return false;
+  }
+  if (SUPABASE_URL === "INSERISCI_QUI_URL_SUPABASE") {
+    document.getElementById("splash").innerHTML = `<div class="splash-card"><div class="app-title" style="color:#FF3B30">⚠️ Configura Supabase</div><p style="color:#fff;padding:16px;">Apri il file <strong>js/config.js</strong> e inserisci URL e chiave Supabase.</p></div>`;
+    return false;
+  }
+  _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+      persistSession: false  // sessione in memoria: richiede login ad ogni apertura
+    }
+  });
+  Auth.init(_sb);
+  Activity.init(_sb);
+  return true;
+}
 
 const PALETTES = {
   blue:   { light:{acc:"#0ea5e9",weak:"#bae6fd"}, dark:{acc:"#38bdf8",weak:"#0b2a3a"} },
@@ -105,59 +127,321 @@ function $ico(name){
 
 /* ===== BOOT ===== */
 async function boot(){
-  const hideSplash = ()=>{
-    const s = document.getElementById("splash");
-    const a = document.getElementById("app");
-    if (s) s.style.display = "none";
-    if (a) a.hidden = false;
-  };
-
-  try{
-    await loadConfig();
-    if ("serviceWorker" in navigator){
-      try{ await navigator.serviceWorker.register("sw.js"); }catch(e){ console.warn("SW:", e); }
-    }
-    try{ await DB.open(); }catch(e){ console.error("IndexedDB:", e); alert("Errore apertura database locale."); }
-
-    // Carica preferenze
-    const pal = await DB.getMeta("palette"); applyPalette(pal||"blue");
-    const theme = await DB.getMeta("theme"); applyTheme(theme||"system");
-    
-    const date = document.getElementById("sale-date"); 
-    if (date) date.valueAsDate = new Date();
-    const dateExp = document.getElementById("expense-date");
-    if (dateExp) dateExp.valueAsDate = new Date();
-    const datePur = document.getElementById("purchase-date");
-    if (datePur) datePur.valueAsDate = new Date();
-
-    bindEvents();
-
-    const mck = document.getElementById("mov-show-arch");
-    const tck = document.getElementById("todo-show-arch");
-    const movPref  = await DB.getMeta("mov_show_arch");
-    const todoPref = await DB.getMeta("todo_show_arch");
-    if (mck)  mck.checked  = !!movPref;
-    if (tck)  tck.checked  = !!todoPref;
-
-    if (new URL(location.href).searchParams.get("unarchive") === "1"){
-      await recoverUnarchiveAll();
-    }
-
-    await refreshMovements();
-    await refreshTodos();
-    await loadProjectRates();
-    addProjectFilamentRow();
-    populateSaleProjectSelectors();
-    // Inizializza pulsante rimozione nella prima riga progetto
-    syncProjectFilamentUI();
-  } catch(e){
-    console.error("Boot error:", e);
-    alert("Errore in avvio. Fai un hard refresh (Ctrl+F5).");
-  } finally {
-    hideSplash();
+  await loadConfig();
+  if ("serviceWorker" in navigator){
+    try{ await navigator.serviceWorker.register("sw.js"); }catch(e){ console.warn("SW:", e); }
   }
+  if (!initSupabase()) return; // config mancante — blocca qui
+
+  // Inizializza database locale (IndexedDB)
+  try{ await DB.open(); }catch(e){ console.error("IndexedDB:", e); }
+
+  // Animazione splash
+  const prog = document.getElementById("progress-bar");
+  const progLbl = document.getElementById("progress-label");
+  const setP = pct => { if(prog) prog.style.width=pct+"%"; if(progLbl) progLbl.textContent=pct+"%"; };
+  setP(30);
+
+  // Lega eventi auth / activity (prima di mostrare le schermate)
+  bindAuthEvents();
+  bindActivityEvents();
+  setP(60);
+
+  // Controlla sessione esistente
+  let user;
+  try { user = await Auth.getSession(); } catch(e) { user = null; }
+  setP(90);
+
+  const splash = document.getElementById("splash");
+  if (splash) splash.style.display = "none";
+
+  if (!user) {
+    showAuthScreen();
+    return;
+  }
+
+  // Sessione valida — vai alla selezione attività
+  state.username = user.username;
+  await showActivityScreen();
 }
 document.addEventListener("DOMContentLoaded", boot);
+
+/* ===== SCREEN MANAGEMENT ===== */
+function showAuthScreen(){
+  document.getElementById("screen-auth").hidden = false;
+  document.getElementById("screen-activity").hidden = true;
+  document.getElementById("app").hidden = true;
+}
+
+async function showActivityScreen(){
+  document.getElementById("screen-auth").hidden = true;
+  document.getElementById("screen-activity").hidden = false;
+  document.getElementById("app").hidden = true;
+  document.getElementById("act-username-display").textContent = state.username;
+  await renderActivityList();
+}
+
+async function showApp(activityId, activityName, role){
+  Activity.setCurrent({ id: activityId, name: activityName, role });
+  DB.init(_sb, activityId);
+
+  document.getElementById("screen-auth").hidden = true;
+  document.getElementById("screen-activity").hidden = true;
+  document.getElementById("app").hidden = false;
+
+  // Titolo header
+  document.getElementById("version-badge").textContent = activityName;
+  document.getElementById("settings-activity-name").textContent = `Attività: ${activityName}`;
+
+  // Carica preferenze
+  try {
+    const pal = await DB.getMeta("palette"); applyPalette(pal||"blue");
+    const theme = await DB.getMeta("theme"); applyTheme(theme||"system");
+  } catch(e) { applyPalette("blue"); applyTheme("system"); }
+
+  // Date default
+  const today = new Date();
+  ["sale-date","expense-date","purchase-date"].forEach(id=>{ const el=document.getElementById(id); if(el) el.valueAsDate=today; });
+
+  // Events (solo prima volta)
+  if (!document.getElementById("app").dataset.bound){
+    document.getElementById("app").dataset.bound = "1";
+    bindEvents();
+  }
+
+  // Preferenze checkboxes
+  try {
+    const movPref = await DB.getMeta("mov_show_arch");
+    const todoPref = await DB.getMeta("todo_show_arch");
+    const mck = document.getElementById("mov-show-arch");
+    const tck = document.getElementById("todo-show-arch");
+    if (mck) mck.checked = !!movPref;
+    if (tck) tck.checked = !!todoPref;
+  } catch(e){}
+
+  await refreshMovements();
+  await refreshTodos();
+  await loadProjectRates();
+  addProjectFilamentRow();
+  await populateSaleProjectSelectors();
+  syncProjectFilamentUI();
+
+  // Realtime sync
+  Activity.subscribeToData(activityId, {
+    movements: () => { refreshMovements(); if(state.currentPage==="page-analisi") renderAnalytics(); },
+    spools:    () => { refreshSpoolCache(); if(state.currentPage==="page-magazzino") { refreshSpools(); refreshSpoolStats(); } },
+    tasks:     () => refreshTodos()
+  });
+  Activity.subscribeToRequests(activityId, () => refreshPendingBadge());
+}
+
+/* ===== AUTH EVENTS ===== */
+function bindAuthEvents(){
+  // Switcher tab login/registrazione
+  document.querySelectorAll(".auth-tab").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      document.querySelectorAll(".auth-tab").forEach(t=>t.classList.remove("active"));
+      btn.classList.add("active");
+      const isLogin = btn.dataset.auth==="login";
+      document.getElementById("form-login").hidden = !isLogin;
+      document.getElementById("form-register").hidden = isLogin;
+      document.getElementById("login-error").textContent="";
+      document.getElementById("reg-error").textContent="";
+    });
+  });
+
+  // Login
+  document.getElementById("form-login").addEventListener("submit", async(e)=>{
+    e.preventDefault();
+    const errEl = document.getElementById("login-error");
+    errEl.textContent="";
+    const username = document.getElementById("login-username").value.trim();
+    const password = document.getElementById("login-password").value;
+    try{
+      const user = await Auth.login(username, password);
+      state.username = user.username;
+      await showActivityScreen();
+    }catch(err){ errEl.textContent = err.message; }
+  });
+
+  // Registrazione
+  document.getElementById("form-register").addEventListener("submit", async(e)=>{
+    e.preventDefault();
+    const errEl = document.getElementById("reg-error");
+    errEl.textContent="";
+    const username = document.getElementById("reg-username").value.trim();
+    const password = document.getElementById("reg-password").value;
+    const password2 = document.getElementById("reg-password2").value;
+    if (password !== password2){ errEl.textContent="Le password non coincidono."; return; }
+    try{
+      const user = await Auth.register(username, password);
+      state.username = user.username;
+      await showActivityScreen();
+    }catch(err){ errEl.textContent = err.message; }
+  });
+}
+
+/* ===== ACTIVITY SCREEN EVENTS ===== */
+function bindActivityEvents(){
+  const user = ()=> Auth.getCurrentUser() || { id: null, username: state.username };
+
+  // Logout
+  document.getElementById("btn-logout").addEventListener("click", async()=>{
+    Activity.unsubscribeAll();
+    await Auth.logout();
+    state.username = "";
+    showAuthScreen();
+  });
+
+  // Crea attività
+  document.getElementById("btn-create-activity").addEventListener("click",()=>{
+    document.getElementById("create-activity-form").hidden = false;
+    document.getElementById("join-activity-form").hidden = true;
+    document.getElementById("activity-error").textContent="";
+    document.getElementById("new-activity-name").focus();
+  });
+  document.getElementById("btn-create-cancel").addEventListener("click",()=>{
+    document.getElementById("create-activity-form").hidden=true;
+    document.getElementById("new-activity-name").value="";
+  });
+  document.getElementById("btn-create-confirm").addEventListener("click", async()=>{
+    const name = document.getElementById("new-activity-name").value.trim();
+    const errEl = document.getElementById("activity-error");
+    errEl.textContent="";
+    try{
+      const u = user();
+      const act = await Activity.createActivity(name, u.id);
+      await showApp(act.id, act.name, act.role);
+    }catch(err){ errEl.textContent=err.message; }
+  });
+
+  // Entra con codice
+  document.getElementById("btn-join-activity").addEventListener("click",()=>{
+    document.getElementById("join-activity-form").hidden = false;
+    document.getElementById("create-activity-form").hidden = true;
+    document.getElementById("activity-error").textContent="";
+    document.getElementById("invite-code-input").focus();
+  });
+  document.getElementById("btn-join-cancel").addEventListener("click",()=>{
+    document.getElementById("join-activity-form").hidden=true;
+    document.getElementById("invite-code-input").value="";
+  });
+  document.getElementById("btn-join-confirm").addEventListener("click", async()=>{
+    const code = document.getElementById("invite-code-input").value.trim();
+    const errEl = document.getElementById("activity-error");
+    errEl.textContent="";
+    try{
+      const u = user();
+      const res = await Activity.requestJoinWithCode(code, u.id, u.username);
+      document.getElementById("join-activity-form").hidden=true;
+      document.getElementById("invite-code-input").value="";
+      alert(`Richiesta inviata a "${res.activityName}".\nAspetta che un socio approvi l'accesso.`);
+    }catch(err){ errEl.textContent=err.message; }
+  });
+}
+
+/* ===== ACTIVITY LIST ===== */
+async function renderActivityList(){
+  const list = document.getElementById("activity-list");
+  list.innerHTML = '<div class="act-loading">Caricamento...</div>';
+  try{
+    const u = Auth.getCurrentUser();
+    const activities = await Activity.listUserActivities(u.id);
+    list.innerHTML="";
+    if (activities.length===0){
+      list.innerHTML='<p class="act-empty muted">Nessuna attività ancora — creane una o entra con un codice invito.</p>';
+      return;
+    }
+    for (const act of activities){
+      const item = document.createElement("div");
+      item.className="act-item";
+      item.innerHTML=`<div class="act-item-icon">${act.role==="owner"?"🏢":"👤"}</div><div class="act-item-info"><strong>${act.name}</strong><span class="muted">${act.role==="owner"?"Proprietario":"Socio"}</span></div><div class="act-item-arrow">›</div>`;
+      item.addEventListener("click",()=>showApp(act.id, act.name, act.role));
+      list.appendChild(item);
+    }
+  }catch(err){
+    list.innerHTML=`<p class="act-empty" style="color:var(--danger)">Errore: ${err.message}</p>`;
+  }
+}
+
+/* ===== SOCI / INVITI (dentro l'app) ===== */
+async function loadMembersPanel(){
+  const act = Activity.getCurrent();
+  if (!act) return;
+
+  // Lista soci
+  try{
+    const members = await Activity.listMembers(act.id);
+    const list = document.getElementById("members-list");
+    list.innerHTML="";
+    for (const m of members){
+      const li=document.createElement("li");
+      li.className="member-item";
+      const isMe = m.username===state.username;
+      const roleLabel = m.role==="owner"?"👑":"👤";
+      li.innerHTML=`<span>${roleLabel} <strong>${m.username}</strong>${isMe?" (tu)":""}</span>`;
+      if (act.role==="owner" && !isMe){
+        const btnRm=document.createElement("button");
+        btnRm.className="btn btn-sm danger";
+        btnRm.textContent="Rimuovi";
+        btnRm.addEventListener("click",async()=>{
+          if(!confirm(`Rimuovere ${m.username} dall'attività?`)) return;
+          try{
+            const u=Auth.getCurrentUser();
+            await Activity.removeMember(act.id, m.userId, u.id);
+            await loadMembersPanel();
+          }catch(err){ alert(err.message); }
+        });
+        li.appendChild(btnRm);
+      }
+      list.appendChild(li);
+    }
+  }catch(e){ console.warn("Members:", e); }
+
+  // Richieste pending
+  await loadPendingRequests();
+}
+
+async function loadPendingRequests(){
+  const act = Activity.getCurrent();
+  if (!act) return;
+  try{
+    const reqs = await Activity.listPendingRequests(act.id);
+    const section = document.getElementById("pending-requests-section");
+    const list = document.getElementById("pending-requests-list");
+    section.hidden = reqs.length===0;
+    list.innerHTML="";
+    for (const r of reqs){
+      const li=document.createElement("li");
+      li.className="request-item";
+      const date=new Intl.DateTimeFormat("it-IT").format(new Date(r.requested_at));
+      li.innerHTML=`<span>👤 <strong>${r.from_username}</strong> <span class="muted">${date}</span></span>`;
+      const btnA=document.createElement("button"); btnA.className="btn btn-sm"; btnA.textContent="Accetta";
+      const btnR=document.createElement("button"); btnR.className="btn btn-sm danger"; btnR.textContent="Rifiuta";
+      btnA.addEventListener("click",async()=>{
+        await Activity.respondToRequest(r.id, true, act.id);
+        await loadPendingRequests();
+      });
+      btnR.addEventListener("click",async()=>{
+        await Activity.respondToRequest(r.id, false, act.id);
+        await loadPendingRequests();
+      });
+      const btns=document.createElement("div"); btns.className="request-btns";
+      btns.append(btnA,btnR); li.appendChild(btns);
+      list.appendChild(li);
+    }
+  }catch(e){ console.warn("Pending:", e); }
+}
+
+async function refreshPendingBadge(){
+  const act = Activity.getCurrent();
+  if (!act) return;
+  try{
+    const reqs = await Activity.listPendingRequests(act.id);
+    const badge = document.getElementById("settings-badge");
+    if (badge){ badge.hidden = reqs.length===0; badge.textContent=reqs.length>0?reqs.length:""; }
+  }catch(e){}
+}
 
 /* ===== EVENT BINDING ===== */
 function bindEvents(){
@@ -174,13 +458,20 @@ function bindEvents(){
     btn.addEventListener("click",()=>switchFormTab(btn.dataset.tab));
   });
 
+  // Cambia attività
+  on($("btn-change-activity"),"click", async()=>{
+    Activity.unsubscribeAll();
+    await showActivityScreen();
+  });
+
   // Settings
   const dlg = $("dlg-settings");
-  on($("btn-settings"),"click",()=>{
+  on($("btn-settings"),"click", async()=>{
     const cur = state.theme || "system";
     document.querySelectorAll(".theme-swatch").forEach(s=>{
       s.classList.toggle("active", s.dataset.theme === cur);
     });
+    await loadMembersPanel();
     dlg.showModal();
   });
   document.querySelectorAll(".theme-swatch").forEach(s=>{
@@ -190,15 +481,43 @@ function bindEvents(){
       applyTheme(s.dataset.theme);
     });
   });
+
+  // Genera codice invito
+  on($("btn-gen-invite"),"click", async()=>{
+    const act = Activity.getCurrent();
+    if (!act) return;
+    const u = Auth.getCurrentUser();
+    try{
+      if (_inviteTimer) clearInterval(_inviteTimer);
+      const res = await Activity.generateInviteCode(act.id, u.id);
+      const box = $("invite-code-display");
+      const codeEl = $("invite-code-value");
+      const timerEl = $("invite-code-timer");
+      box.hidden=false;
+      codeEl.textContent = res.code;
+      // Countdown 10 minuti
+      const exp = new Date(res.expires_at).getTime();
+      const tick=()=>{
+        const rem = Math.max(0, Math.ceil((exp-Date.now())/1000));
+        const m=Math.floor(rem/60), s=rem%60;
+        timerEl.textContent = rem>0 ? `${m}:${String(s).padStart(2,"0")}` : "Scaduto";
+        if(rem<=0){ clearInterval(_inviteTimer); box.hidden=true; }
+      };
+      tick();
+      _inviteTimer = setInterval(tick,1000);
+    }catch(err){ alert(err.message); }
+  });
+
   on($("btn-export"),"click", onExport);
   on($("file-import"),"change", e=>onImport(e.target.files[0]));
+
   // Sale form
   on($("form-sale"),"submit", onAddSale);
   on($("btn-add-filament"),"click", addFilamentRow);
-  
+
   // Expense form
   on($("form-expense"),"submit", onAddExpense);
-  
+
   // Purchase form
   on($("form-purchase"),"submit", onAddPurchase);
   initPurchaseSpoolSelector();
@@ -704,10 +1023,11 @@ async function refreshMovements(){
       filamentPanel = `<div class="filament-detail-panel"><div class="fdl-list">${detailRows}</div><p class="fdl-note">⚠️ Modificare i materiali non aggiorna il magazzino bobine.</p><button type="button" class="btn-edit-filaments">✏️ Modifica materiali</button></div>`;
     }
 
+    const byLabel = m.createdBy && m.createdBy !== state.username ? `<span class="by-label">da ${m.createdBy}</span>` : "";
     left.innerHTML = `
       ${typeBadge}
       ${mainInfo}
-      <div class="item-sub">${m.description || ''} • ${dateStr}</div>
+      <div class="item-sub">${m.description || ''} • ${dateStr} ${byLabel}</div>
       ${filamentSummary}
       ${filamentPanel}
     `;
@@ -898,7 +1218,8 @@ async function refreshTodos(){
 
     const left = document.createElement("div");
     const prTxt = { "very-high":"Molto alta", "high":"Alta", "normal":"Normale", "low":"Bassa" }[t.priority] || t.priority || "Normale";
-    left.innerHTML = `<div><strong>${t.description||"(senza testo)"}</strong></div><div class="item-sub">Priorità: ${prTxt}</div>`;
+    const byLabelT = t.createdBy && t.createdBy !== state.username ? `<span class="by-label">da ${t.createdBy}</span>` : "";
+    left.innerHTML = `<div><strong>${t.description||"(senza testo)"}</strong></div><div class="item-sub">Priorità: ${prTxt} ${byLabelT}</div>`;
 
     const right = document.createElement("div"); right.className="item-actions";
     const mkBtn = (title,icon,handler)=>{ const b=document.createElement("button"); b.className="icon-btn icon-only"; b.title=title; b.setAttribute("aria-label",title); b.appendChild($ico(icon)); b.addEventListener("click",handler); return b; };

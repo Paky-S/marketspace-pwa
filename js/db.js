@@ -17,6 +17,7 @@ const DB = (()=>{
     marketplaceFee: 15
   };
 
+  function init(_supabaseClient, _activityId){ /* no-op: local IndexedDB doesn't need Supabase */ }
   function open(){
     return new Promise((res,rej)=>{
       const req = indexedDB.open(DB_NAME, DB_VERSION);
@@ -461,7 +462,7 @@ const DB = (()=>{
   async function sha256(text){ const enc=new TextEncoder().encode(text); const hash = await crypto.subtle.digest("SHA-256", enc); return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,"0")).join(""); }
 
   return {
-    open, MATERIALS, GRAM_OPTIONS, DEFAULT_RATES,
+    init, open, MATERIALS, GRAM_OPTIONS, DEFAULT_RATES,
     addMovement, listMovements, getMovementStats, getMostUsedMaterial,
     getMovement, editMovement, deleteMovement, archiveMovement, unarchiveMovement,
     addTask, listTasks, toggleTask, editTask, deleteTask, archiveTask, unarchiveTask,

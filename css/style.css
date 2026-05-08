@@ -297,6 +297,7 @@ main {
 
 /* MULTI-FILAMENT ROWS */
 .filament-details[hidden], .btn-filament-remove[hidden], #filament-total[hidden] { display: none !important; }
+.auth-form[hidden], .inline-form[hidden], #screen-auth[hidden], #screen-activity[hidden], #invite-code-display[hidden], #pending-requests-section[hidden], #create-activity-form[hidden], #join-activity-form[hidden] { display: none !important; }
 .filament-row { margin-bottom: 8px; }
 .filament-row-main { display: flex; gap: 8px; align-items: center; }
 .filament-row-main select { flex: 1; }
@@ -1122,6 +1123,359 @@ input, select {
 }
 
 /* ============================================
+   MarketSpace v2.0 — Auth, Activity, Soci
+   ============================================ */
+
+/* ─── AUTH SCREEN ─────────────────────────────────────────── */
+.auth-wrap {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 24px 16px;
+}
+
+.auth-card {
+  background: var(--card);
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-logo {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--primary);
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.auth-subtitle {
+  text-align: center;
+  color: var(--muted);
+  font-size: .85rem;
+  margin: 0 0 24px;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 0;
+  border-radius: 10px;
+  background: var(--bg);
+  padding: 4px;
+  margin-bottom: 20px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: .9rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.auth-tab.active {
+  background: var(--card);
+  color: var(--primary);
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.auth-field label {
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.auth-field input {
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--input-bg);
+  color: var(--fg);
+  font-size: 1rem;
+  transition: border-color .2s;
+}
+
+.auth-field input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.auth-error {
+  color: var(--danger);
+  font-size: .85rem;
+  min-height: 18px;
+  font-weight: 500;
+}
+
+.auth-btn {
+  margin-top: 4px;
+  padding: 13px;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 12px;
+}
+
+/* ─── ACTIVITY SCREEN ─────────────────────────────────────── */
+.act-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+}
+
+.act-logo {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.act-user-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.act-username {
+  font-weight: 600;
+  font-size: .9rem;
+  color: var(--fg);
+}
+
+.btn-link-sm {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: .85rem;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.btn-link-sm:hover { background: var(--danger-soft); }
+
+.act-content {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.act-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0 0 4px;
+}
+
+.act-subtitle {
+  margin: 0 0 20px;
+  font-size: .9rem;
+}
+
+.act-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.act-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border-radius: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform .15s, box-shadow .15s;
+  border: 1.5px solid var(--border);
+}
+
+.act-item:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.act-item:active { transform: scale(.98); }
+
+.act-item-icon { font-size: 1.5rem; }
+
+.act-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.act-item-info strong { font-size: 1rem; }
+.act-item-info span { font-size: .8rem; }
+
+.act-item-arrow {
+  color: var(--muted);
+  font-size: 1.3rem;
+  font-weight: 300;
+}
+
+.act-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.act-loading, .act-empty {
+  text-align: center;
+  padding: 24px;
+  color: var(--muted);
+}
+
+.inline-form {
+  background: var(--card);
+  border: 1.5px solid var(--primary);
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.inline-form input {
+  padding: 11px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--input-bg);
+  color: var(--fg);
+  font-size: 1rem;
+}
+
+.inline-form-btns {
+  display: flex;
+  gap: 8px;
+}
+
+/* ─── BADGE NOTIFICA ─────────────────────────────────────── */
+.notif-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: var(--danger);
+  color: #fff;
+  font-size: .6rem;
+  font-weight: 800;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+#btn-settings { position: relative; }
+
+/* ─── CODICE INVITO ──────────────────────────────────────── */
+.invite-code-box {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.invite-code-label { font-size: .82rem; color: var(--muted); }
+
+.invite-code-text {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 6px;
+  color: var(--primary);
+  font-family: monospace;
+}
+
+.invite-code-timer {
+  font-size: .8rem;
+  color: var(--warning);
+  font-weight: 700;
+  margin-left: auto;
+}
+
+/* ─── SOCI LIST ──────────────────────────────────────────── */
+.members-list, .requests-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.member-item, .request-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: var(--bg);
+  border-radius: 10px;
+  font-size: .9rem;
+  gap: 8px;
+}
+
+.request-btns { display: flex; gap: 6px; }
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: .8rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* ─── BY-LABEL (audit trail) ─────────────────────────────── */
+.by-label {
+  display: inline-block;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: .72rem;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 1px 6px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/* ─── RICHIESTE PENDING ──────────────────────────────────── */
+#pending-requests-section {
+  background: var(--warning-soft);
+  border-radius: 10px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+/* ============================================
    PROGETTI PAGE
    ============================================ */
 
@@ -1433,3 +1787,5 @@ input, select {
     margin-left: 0;
   }
 }
+
+

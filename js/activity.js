@@ -19,13 +19,15 @@ const Activity = (() => {
       .select("role, joined_at, activities(id, name, created_at)")
       .eq("user_id", userId);
     if (error) throw error;
-    return (data || []).map(m => ({
-      id: m.activities.id,
-      name: m.activities.name,
-      role: m.role,
-      joinedAt: m.joined_at,
-      createdAt: m.activities.created_at
-    }));
+    return (data || [])
+      .filter(m => m.activities)  // join può essere null se l'attività non è leggibile via RLS
+      .map(m => ({
+        id: m.activities.id,
+        name: m.activities.name,
+        role: m.role,
+        joinedAt: m.joined_at,
+        createdAt: m.activities.created_at
+      }));
   }
 
   // Crea nuova attività (verifica nome unico)
@@ -235,6 +237,12 @@ const Activity = (() => {
         filter: `activity_id=eq.${activityId}`
       }, callbacks.tasks);
     }
+    if (callbacks.members) {
+      ch.on("postgres_changes", {
+        event: "*", schema: "public", table: "memberships",
+        filter: `activity_id=eq.${activityId}`
+      }, callbacks.members);
+    }
 
     _dataSub = ch.subscribe();
     return _dataSub;
@@ -245,9 +253,41 @@ const Activity = (() => {
     if (_dataSub) { _sb.removeChannel(_dataSub); _dataSub = null; }
   }
 
+  // Elimina attività (solo il proprietario) — chiama RPC server-side con CASCADE
+  async function deleteActivity(activityId) {
+    const { error } = await _sb.rpc('delete_activity', { p_activity_id: activityId });
+    if (error) throw new Error(error.message);
+    if (_current && _current.id === activityId) _current = null;
+  }
+
+  // Abbandona attività (solo membri, non owner)
+  async function leaveActivity(activityId, userId) {
+    const { error } = await _sb
+      .from('memberships')
+      .delete()
+      .eq('activity_id', activityId)
+      .eq('user_id', userId);
+    if (error) throw new Error(error.message);
+    if (_current && _current.id === activityId) _current = null;
+  }
+
+  // Rinomina attività (solo il proprietario)
+  async function renameActivity(activityId, newName) {
+    const trimmed = newName.trim();
+    if (!trimmed) throw new Error("Il nome non può essere vuoto");
+    if (trimmed.length > 60) throw new Error("Nome troppo lungo (max 60 caratteri)");
+    const { error } = await _sb
+      .from("activities")
+      .update({ name: trimmed })
+      .eq("id", activityId);
+    if (error) throw new Error(error.message);
+    if (_current && _current.id === activityId) _current.name = trimmed;
+    return trimmed;
+  }
+
   return {
     init, getCurrent, setCurrent,
-    listUserActivities, createActivity,
+    listUserActivities, createActivity, renameActivity, deleteActivity, leaveActivity,
     generateInviteCode, requestJoinWithCode,
     listPendingRequests, respondToRequest,
     listMembers, removeMember,

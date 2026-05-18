@@ -43,7 +43,10 @@
             </div>
             <div class="auth-field">
               <label>Password</label>
-              <input id="login-password" type="password" placeholder="La tua password" autocomplete="current-password" required>
+              <div class="pw-wrap">
+                <input id="login-password" type="password" placeholder="La tua password" autocomplete="current-password" required>
+                <button type="button" class="pw-toggle" aria-label="Mostra password">👁</button>
+              </div>
             </div>
             <div id="login-error" class="auth-error"></div>
             <button type="submit" class="btn primary auth-btn">Accedi</button>
@@ -56,11 +59,17 @@
             </div>
             <div class="auth-field">
               <label>Password</label>
-              <input id="reg-password" type="password" placeholder="Minimo 6 caratteri" autocomplete="new-password" required>
+              <div class="pw-wrap">
+                <input id="reg-password" type="password" placeholder="Minimo 6 caratteri" autocomplete="new-password" required>
+                <button type="button" class="pw-toggle" aria-label="Mostra password">👁</button>
+              </div>
             </div>
             <div class="auth-field">
               <label>Ripeti password</label>
-              <input id="reg-password2" type="password" placeholder="Ripeti la password" autocomplete="new-password" required>
+              <div class="pw-wrap">
+                <input id="reg-password2" type="password" placeholder="Ripeti la password" autocomplete="new-password" required>
+                <button type="button" class="pw-toggle" aria-label="Mostra password">👁</button>
+              </div>
             </div>
             <div id="reg-error" class="auth-error"></div>
             <button type="submit" class="btn primary auth-btn">Crea account</button>
@@ -591,8 +600,17 @@
     <!-- Settings Modal -->
     <dialog id="dlg-settings">
       <form method="dialog" class="card" style="max-width:520px;">
-        <h2 style="margin:0 0 4px;">Impostazioni</h2>
-        <p class="muted" id="settings-activity-name" style="margin:0 0 12px;font-size:.85rem;"></p>
+        <h2 style="margin:0 0 12px;">Impostazioni</h2>
+        <div class="settings-activity-block">
+          <span class="settings-activity-label">Attività corrente</span>
+          <div class="settings-activity-row">
+            <strong id="settings-activity-name" class="settings-activity-name"></strong>
+            <button type="button" id="btn-rename-activity" class="btn-rename-link">✏️ Rinomina</button>
+          </div>
+          <div id="settings-leave-row" hidden style="margin-top:8px;">
+            <button type="button" id="btn-leave-activity" class="btn btn-sm" style="background:var(--warning,#FF9500);color:#fff;width:auto;">🚪 Abbandona attività</button>
+          </div>
+        </div>
 
         <div class="row" style="align-items:center;">
           <label>Tema</label>

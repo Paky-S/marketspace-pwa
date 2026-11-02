@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1018">
+<title>Road to Pro — Prototype 0</title>
+<style>
+:root{--bg:#0b1018;--p:#131c2a;--p2:#0f1723;--line:#283750;--text:#eef4ff;--muted:#94a6bf;--green:#6ee7a8;--blue:#6aa9ff;--yellow:#ffd36e}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(#132038,#0b1018 32%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+button,input,select{font:inherit}.app{max-width:540px;margin:auto;padding:16px 14px 92px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.brand{font-weight:900;letter-spacing:.08em}.tag{font-size:11px;padding:6px 9px;border-radius:999px;background:#1b2a41;color:#b9d2ff;border:1px solid #304666}
+.card{background:linear-gradient(180deg,#172234,#101824);border:1px solid var(--line);border-radius:19px;padding:15px;margin-bottom:11px;box-shadow:0 12px 30px #0004}
+.hero{display:flex;gap:12px;align-items:center}.avatar{width:62px;height:62px;border-radius:17px;background:#203652;display:grid;place-items:center;color:var(--green);font-weight:900}.grow{flex:1}.name{font-size:21px;font-weight:900}.sub{font-size:12px;color:var(--muted);margin-top:3px}.ovr{font-size:32px;font-weight:950;text-align:center}.ovr small{font-size:9px;display:block;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:13px}.stat{background:var(--p2);border:1px solid #233248;border-radius:13px;padding:9px}.stat b{display:block}.stat span{font-size:9px;color:var(--muted);text-transform:uppercase}
+.bar{height:8px;background:#09111c;border:1px solid #233248;border-radius:999px;overflow:hidden;margin-top:9px}.fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--green))}
+.title{font-size:11px;color:#a8bad1;text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin-bottom:9px}.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px;background:var(--p2);border:1px solid #233248;border-radius:14px;margin-top:7px}.row strong{font-size:14px}.row span{font-size:11px;color:var(--muted);display:block;margin-top:2px}
+.btn{border:0;border-radius:11px;padding:9px 11px;font-weight:850;background:var(--green);color:#082015}.btn.alt{background:#243650;color:#e9f1ff}.btn.ghost{background:transparent;color:#bed0e8;border:1px solid #344966}.btn:disabled{opacity:.4}
+.view{display:none}.view.active{display:block}.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(540px,100%);display:grid;grid-template-columns:repeat(3,1fr);padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:#0a1019f2;border-top:1px solid #25344c;backdrop-filter:blur(16px)}.tab{border:0;background:transparent;color:#8293aa;padding:10px 4px;border-radius:11px;font-weight:800}.tab.active{background:#19263a;color:#fff}
+.goal{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:#07101a;border:2px solid #8196ac;padding:7px;border-radius:8px;aspect-ratio:1.8;margin:12px 0}.zone{border:1px dashed #38506d;border-radius:6px;background:#101d2b}.zone.target{background:radial-gradient(circle,#9dffd0 0 10%,#23744f 12% 42%,#143426 44%)}.zone.good{background:#257550}.zone.bad{background:#753840}
+.score{display:flex;justify-content:space-between;font-size:12px;color:#bdcde1}.msg{text-align:center;font-weight:900;margin:10px 0}
+.choices{display:flex;gap:7px;flex-wrap:wrap}.choice{border:1px solid #30445f;background:#111b29;color:#c7d5e8;border-radius:10px;padding:8px 9px;font-size:12px;font-weight:800}.choice.on{background:#244667;color:#fff;border-color:#5486b6}
+.skillgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.skill{background:var(--p2);border:1px solid #25364e;border-radius:14px;padding:11px}.skill.lock{opacity:.52}.skill h4{margin:0;font-size:13px}.lvl{font-size:22px;color:var(--green);font-weight:950;margin-top:5px}.req{font-size:10px;color:var(--muted);min-height:30px;margin-top:4px}.skill .btn{width:100%;margin-top:7px}
+.modal{position:fixed;inset:0;background:#03070dcf;display:none;align-items:center;justify-content:center;padding:18px;z-index:50;backdrop-filter:blur(10px)}.modal.show{display:flex}.box{width:min(480px,100%);background:#142031;border:1px solid #314663;border-radius:22px;padding:19px}.box h1{margin:8px 0 6px}.box p{color:var(--muted);font-size:13px;line-height:1.45}.field{margin:11px 0}.field label{display:block;font-size:10px;color:#9db0c9;text-transform:uppercase;font-weight:800;margin-bottom:5px}.field input,.field select{width:100%;border:1px solid #30445e;background:#0b1420;color:#fff;padding:11px;border-radius:11px}
+.toast{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-15px);opacity:0;background:#eff7ff;color:#122033;padding:10px 13px;border-radius:11px;font-size:12px;font-weight:850;z-index:70;transition:.2s}.toast.show{opacity:1;transform:translateX(-50%)}
+.note{font-size:11px;color:#ffc96e;margin:0 0 10px}.idle{margin-top:10px;padding:11px;background:#0c1521;border:1px solid #24344c;border-radius:12px;font-size:12px;color:#bdcde1}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="modal" id="onboard"><div class="box">
+<div class="tag">PROTOTYPE 0</div><h1>Inizia la carriera</h1>
+<p>Prima versione giocabile: ATT, Energia, Training Ground, allenamento idle, PS/OVR e Skill Tree.</p>
+<div class="field"><label>Nome calciatore</label><input id="nameInput" maxlength="18" value="Dyonic"></div>
+<div class="field"><label>Piede preferito</label><select id="footInput"><option>Destro</option><option>Sinistro</option></select></div>
+<button class="btn" id="create" style="width:100%">Crea attaccante</button>
+</div></div>
+
+<div class="app">
+<div class="top"><div class="brand">ROAD TO PRO</div><div class="tag">P0 · WEB</div></div>
+<div class="note">Demo: Energia accelerata a +1 ogni 8 secondi per testare il loop.</div>
+
+<section class="view active" id="home">
+<div class="card">
+<div class="hero"><div class="avatar">ATT</div><div class="grow"><div class="name" id="pname">—</div><div class="sub" id="psub">Attaccante</div></div><div class="ovr"><span id="ovr">40</span><small>OVR</small></div></div>
+<div class="stats"><div class="stat"><b id="ps">0.00</b><span>PS liberi</span></div><div class="stat"><b id="energy">100/100</b><span>Energia</span></div><div class="stat"><b id="invested">0</b><span>PS investiti</span></div></div>
+<div class="bar"><div class="fill" id="efill" style="width:100%"></div></div>
+</div>
+<div class="card"><div class="title">Centro operativo</div>
+<div class="row"><div><strong>Training Ground</strong><span id="trainHint">Energia disponibile</span></div><button class="btn" data-go="training">Allenati</button></div>
+<div class="row"><div><strong>Skill Tree</strong><span id="skillHint">Accumula PS</span></div><button class="btn alt" data-go="career">Potenzia</button></div>
+<div class="row"><div><strong>Allenamento idle</strong><span id="idleHome">Nessuno</span></div><button class="btn ghost" data-go="training">Apri</button></div>
+</div>
+</section>
+
+<section class="view" id="training">
+<div class="card"><div class="title">Energia Training</div><div style="display:flex;justify-content:space-between"><strong id="energyBig">100 / 100</strong><span id="regen" style="font-size:12px;color:#bcd0e7">Piena</span></div><div class="bar"><div class="fill" id="efill2" style="width:100%"></div></div></div>
+<div class="card"><div class="title">Allenamento attivo</div><strong>Finalizzazione</strong><p style="font-size:12px;color:#94a6bf">10 tiri · costo 6 Energia. Tocca il bersaglio verde prima che sparisca.</p>
+<button class="btn" id="startGame">Inizia esercizio</button>
+<div id="game" style="display:none"><div class="goal" id="goal"></div><div class="score"><span>Tiro <b id="shot">0</b>/10</span><span>Punti <b id="score">0</b></span></div><div class="msg" id="msg">PRONTO</div></div></div>
+<div class="card"><div class="title">Allenamento idle</div>
+<p style="font-size:12px;color:#94a6bf">Scegli un focus e un timer. In produzione i timer arriveranno fino a ore.</p>
+<div class="choices" id="focus"></div><div style="height:8px"></div><div class="choices" id="duration"></div>
+<button class="btn alt" id="startIdle" style="margin-top:10px">Avvia allenamento</button><div class="idle" id="idleBox">Nessun allenamento in corso.</div></div>
+</section>
+
+<section class="view" id="career">
+<div class="card"><div class="title">Carriera</div><div class="stats"><div class="stat"><b id="careerPs">0.00</b><span>PS</span></div><div class="stat"><b id="careerOvr">40</b><span>OVR</span></div><div class="stat"><b>ATT</b><span>Ruolo</span></div></div></div>
+<div class="card"><div class="title">Skill Tree ATT · prototipo</div><div class="skillgrid" id="skills"></div></div>
+<div class="card"><button class="btn ghost" id="reset" style="width:100%">Azzera Prototype 0</button></div>
+</section>
+</div>
+
+<nav class="tabs"><button class="tab active" data-view="home">Home</button><button class="tab" data-view="training">Training</button><button class="tab" data-view="career">Carriera</button></nav>
+
+<script>
+(function(){
+"use strict";
+var KEY="rtp_p0_web_v1", MAX=100, COST=6, REGEN=8000;
+var SK={
+ precision:{n:"Precisione tiro"},
+ accel:{n:"Accelerazione"},
+ movement:{n:"Smarcamento"},
+ control:{n:"Primo controllo"},
+ power:{n:"Potenza tiro",r:[["precision",5]]},
+ dribble:{n:"Dribbling 1v1",r:[["control",5],["accel",3]]}
+};
+function fresh(){var s={made:false,name:"Dyonic",foot:"Destro",ps:0,invested:0,energy:100,last:Date.now(),idle:null,focus:"precision",dur:30,skills:{}};Object.keys(SK).forEach(function(k){s.skills[k]=0});return s}
+var S;try{S=JSON.parse(localStorage.getItem(KEY))||fresh()}catch(e){S=fresh()}
+Object.keys(SK).forEach(function(k){if(S.skills[k]==null)S.skills[k]=0});
+var G=null;
+function save(){localStorage.setItem(KEY,JSON.stringify(S))}
+function toast(x){var t=document.getElementById("toast");t.textContent=x;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},1600)}
+function updateEnergy(){var now=Date.now();if(S.energy>=MAX){S.energy=MAX;S.last=now;return}var g=Math.floor((now-S.last)/REGEN);if(g>0){S.energy=Math.min(MAX,S.energy+g);S.last+=g*REGEN;save()}}
+function nextSec(){return S.energy>=MAX?0:Math.max(0,Math.ceil((REGEN-(Date.now()-S.last))/1000))}
+function cost(l){return Math.ceil(5+.25*Math.pow(l,1.30))}
+function target(o){var x=o-40;return 100*(x+1.98927*Math.pow(x,1.235014))}
+function ovr(ps){if(ps<=0)return 40;var lo=40,hi=400;for(var i=0;i<40;i++){var m=(lo+hi)/2;if(target(m)<=ps)lo=m;else hi=m}return Math.floor(lo)}
+function open(k){var r=SK[k].r;if(!r)return true;return r.every(function(x){return S.skills[x[0]]>=x[1]})}
+function req(k){var r=SK[k].r;if(!r)return "Base · subito disponibile";return r.map(function(x){return SK[x[0]].n+" Lv"+x[1]}).join(" + ")}
+function go(v){document.querySelectorAll(".view").forEach(function(x){x.classList.remove("active")});document.getElementById(v).classList.add("active");document.querySelectorAll(".tab").forEach(function(x){x.classList.toggle("active",x.getAttribute("data-view")===v)});window.scrollTo(0,0)}
+document.querySelectorAll("[data-view]").forEach(function(b){b.onclick=function(){go(b.getAttribute("data-view"))}});
+document.querySelectorAll("[data-go]").forEach(function(b){b.onclick=function(){go(b.getAttribute("data-go"))}});
+function renderSkills(){var root=document.getElementById("skills");root.innerHTML="";Object.keys(SK).forEach(function(k){var l=S.skills[k],c=cost(l),ok=open(k),d=document.createElement("div");d.className="skill"+(ok?"":" lock");d.innerHTML="<h4>"+SK[k].n+"</h4><div class='lvl'>Lv "+l+"</div><div class='req'>"+req(k)+"</div><button class='btn alt' "+((!ok||S.ps<c)?"disabled":"")+">+1 · "+c+" PS</button>";d.querySelector("button").onclick=function(){if(!ok||S.ps<c)return;S.ps-=c;S.invested+=c;S.skills[k]++;save();toast(SK[k].n+" → Lv "+S.skills[k]);render()};root.appendChild(d)})}
+function renderIdle(){var b=document.getElementById("idleBox"),h=document.getElementById("idleHome");if(!S.idle||S.idle.claimed){b.textContent="Nessun allenamento in corso.";h.textContent="Nessuno";return}var rem=S.idle.end-Date.now();if(rem>0){var sec=Math.ceil(rem/1000),tx=Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0");b.innerHTML="<b>"+SK[S.idle.focus].n+"</b><br>Termina tra "+tx+" · ricompensa "+S.idle.reward.toFixed(2)+" PS";h.textContent=SK[S.idle.focus].n+" · "+tx}else{b.innerHTML="<b>Allenamento completato</b><br>"+S.idle.reward.toFixed(2)+" PS<br><button class='btn' id='claim' style='margin-top:7px'>Raccogli</button>";h.textContent="Completato · raccogli";setTimeout(function(){var q=document.getElementById("claim");if(q)q.onclick=function(){S.ps+=S.idle.reward;S.idle.claimed=true;save();toast("+"+S.idle.reward.toFixed(2)+" PS");render()}},0)}}
+function render(){updateEnergy();var O=ovr(S.invested);document.getElementById("pname").textContent=S.name;document.getElementById("psub").textContent="Piede "+S.foot.toLowerCase()+" · Attaccante · Rookie";document.getElementById("ovr").textContent=O;document.getElementById("ps").textContent=S.ps.toFixed(2);document.getElementById("energy").textContent=S.energy+"/"+MAX;document.getElementById("energyBig").textContent=S.energy+" / "+MAX;document.getElementById("invested").textContent=Math.round(S.invested);document.getElementById("careerPs").textContent=S.ps.toFixed(2);document.getElementById("careerOvr").textContent=O;document.getElementById("efill").style.width=S.energy+"%";document.getElementById("efill2").style.width=S.energy+"%";document.getElementById("regen").textContent=S.energy>=MAX?"Energia piena":"+1 tra 0:"+String(nextSec()).padStart(2,"0");document.getElementById("trainHint").textContent=S.energy>=COST?S.energy+" Energia disponibile":"Energia insufficiente";document.getElementById("skillHint").textContent=S.ps>=5?S.ps.toFixed(2)+" PS da spendere":"Accumula PS";renderIdle();renderSkills();save()}
+function setupChoices(){var f=document.getElementById("focus"),d=document.getElementById("duration");f.innerHTML="";d.innerHTML="";["precision","accel","movement","control"].forEach(function(k){var b=document.createElement("button");b.className="choice"+(S.focus===k?" on":"");b.textContent=SK[k].n;b.onclick=function(){S.focus=k;save();setupChoices()};f.appendChild(b)});[15,30,45,60,300].forEach(function(sec){var b=document.createElement("button");b.className="choice"+(S.dur===sec?" on":"");b.textContent=sec<60?sec+"s":sec===60?"1 min":"5 min";b.onclick=function(){S.dur=sec;save();setupChoices()};d.appendChild(b)})}
+document.getElementById("startIdle").onclick=function(){if(S.idle&&!S.idle.claimed&&Date.now()<S.idle.end){toast("Allenamento già in corso");return}var r=Math.max(.25,S.dur/60*.65);S.idle={focus:S.focus,end:Date.now()+S.dur*1000,reward:r,claimed:false};save();toast("Allenamento avviato");render()};
+function buildGoal(){var g=document.getElementById("goal");g.innerHTML="";for(var i=0;i<9;i++){(function(n){var z=document.createElement("div");z.className="zone";z.onclick=function(){tap(n)};g.appendChild(z)})(i)}}
+function start(){updateEnergy();if(G)return;if(S.energy<COST){toast("Energia insufficiente");return}S.energy-=COST;S.last=Date.now();G={shot:0,score:0,target:0,active:false,t:null,end:0};document.getElementById("game").style.display="block";document.getElementById("startGame").disabled=true;next();save();render()}
+function next(){if(G.shot>=10){finish();return}G.shot++;G.target=Math.floor(Math.random()*9);G.active=true;G.end=Date.now()+1300;document.querySelectorAll(".zone").forEach(function(z,i){z.className="zone"+(i===G.target?" target":"")});document.getElementById("shot").textContent=G.shot;document.getElementById("score").textContent=G.score;document.getElementById("msg").textContent="TOCCA IL BERSAGLIO";clearTimeout(G.t);G.t=setTimeout(function(){resolve(false)},1300)}
+function tap(i){if(G&&G.active)resolve(i===G.target)}
+function resolve(hit){if(!G||!G.active)return;G.active=false;clearTimeout(G.t);var z=document.querySelectorAll(".zone")[G.target];if(z)z.classList.add(hit?"good":"bad");if(hit){G.score+=100+Math.round(Math.max(0,G.end-Date.now())/10);document.getElementById("msg").textContent="CENTRO!"}else document.getElementById("msg").textContent="MANCATO";document.getElementById("score").textContent=G.score;setTimeout(next,420)}
+function finish(){var ratio=Math.min(1,G.score/2300),grade="C",reward=.75;if(ratio>=.82){grade="S";reward=1}else if(ratio>=.65){grade="A";reward=.95}else if(ratio>=.45){grade="B";reward=.85}S.ps+=reward;G=null;document.querySelectorAll(".zone").forEach(function(z){z.className="zone"});document.getElementById("msg").textContent="Voto "+grade+" · +"+reward.toFixed(2)+" PS";document.getElementById("startGame").disabled=false;document.getElementById("startGame").textContent="Ripeti esercizio";save();toast("Finalizzazione: "+grade+" · +"+reward.toFixed(2)+" PS");render()}
+document.getElementById("startGame").onclick=start;
+document.getElementById("create").onclick=function(){S.name=(document.getElementById("nameInput").value||"Rookie").trim();S.foot=document.getElementById("footInput").value;S.made=true;save();document.getElementById("onboard").classList.remove("show");toast("Carriera creata");render()};
+document.getElementById("reset").onclick=function(){if(confirm("Azzero tutti i progressi del prototipo?")){localStorage.removeItem(KEY);location.reload()}};
+buildGoal();setupChoices();if(!S.made)document.getElementById("onboard").classList.add("show");render();setInterval(render,1000);
+})();
+</script>
+</body>
+</html>

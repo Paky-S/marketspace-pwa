@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1420">
-<title>Road to Pro — Prototype 0.4.4</title>
+<title>Road to Pro — Prototype 0.5</title>
 <style>
 :root{
   --bg:#09111a;--panel:#101a27;--panel2:#0c1520;--line:#273950;
@@ -113,11 +113,34 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
 .skillgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.skill{background:var(--panel2);border:1px solid #25364e;border-radius:14px;padding:11px}.skill.lock{opacity:.52}.skill h4{margin:0;font-size:13px}.lvl{font-size:22px;color:var(--green);font-weight:950;margin-top:5px}.req{font-size:10px;color:var(--muted);min-height:30px;margin-top:4px}.skill .btn{width:100%;margin-top:7px}
 .note{margin:10px 12px 0;font-size:11px;color:#ffd98a;padding:8px 10px;border-radius:11px;background:#2a2313;border:1px solid #59491d}
 
+/* TRAINING GROUND 0.5 */
+.dribble-lane{position:relative;height:220px;margin:12px 0 10px;border:2px solid #55715f;border-radius:18px;overflow:hidden;background:
+linear-gradient(90deg,transparent 0 31%,#ffffff25 31% 32%,transparent 32% 68%,#ffffff25 68% 69%,transparent 69%),
+repeating-linear-gradient(0deg,#347d45 0 36px,#3c8a4d 36px 72px)}
+.dribble-lane:before{content:"";position:absolute;left:12px;right:12px;top:16px;height:3px;background:#ffffff55}
+.dribble-gate{position:absolute;top:24px;width:72px;height:52px;border:4px solid #f0d45b;border-bottom:0;border-radius:10px 10px 0 0;transition:.18s;filter:drop-shadow(0 4px 3px #0003)}
+.dribble-gate.left{left:28px}.dribble-gate.right{right:28px}
+.dribble-gate.good{border-color:#75f0aa}.dribble-gate.bad{border-color:#ff7676}
+.dribble-cue{position:absolute;top:82px;left:50%;transform:translateX(-50%);font-size:40px;font-weight:950;text-shadow:0 3px 0 #0004}
+.dribble-runner{position:absolute;width:60px;height:95px;left:50%;bottom:16px;transform:translateX(-50%);transition:left .22s cubic-bezier(.2,.8,.2,1)}
+.dribble-runner.left{left:29%}.dribble-runner.right{left:71%}
+.dribble-runner .avatar-mini-head{width:30px;height:34px;left:15px;top:0}
+.runner-body{position:absolute;width:28px;height:40px;left:16px;top:30px;border-radius:8px 8px 12px 12px;background:linear-gradient(90deg,var(--jersey2),var(--jersey),var(--jersey2));border:2px solid #172a42}
+.runner-body:after{content:"9";position:absolute;right:5px;top:8px;color:#fff;font-size:11px;font-weight:950}
+.runner-ball{position:absolute;left:35px;bottom:0;font-size:24px;filter:drop-shadow(0 3px 2px #0004)}
+.dribble-controls{display:grid;grid-template-columns:1fr 1fr;gap:9px}.dribble-controls button{padding:14px 10px;font-size:18px}
+.training-result{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#b8cadd;margin-top:7px}
+.training-result b{color:#fff}
+.footballer.training-state{animation:trainJog 1s infinite ease-in-out}
+.footballer.training-state .ball{animation:trainingBall .72s infinite ease-in-out}
+@keyframes trainJog{0%,100%{transform:translate(-50%,-50%)}50%{transform:translate(-50%,calc(-50% - 7px))}}
+@keyframes trainingBall{0%,100%{transform:translate(0,0) rotate(0)}50%{transform:translate(-10px,-16px) rotate(85deg)}}
+
 /* bottom nav */
 .tabs{position:fixed;z-index:60;bottom:0;left:50%;transform:translateX(-50%);width:min(560px,100%);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 8px calc(7px + env(safe-area-inset-bottom));background:#09111bf2;border-top:1px solid #26394f;backdrop-filter:blur(14px)}
 .tab{border:0;background:transparent;color:#8295ac;padding:8px 2px;border-radius:11px;font-size:10px;font-weight:900}.tab b{display:block;font-size:18px;line-height:18px;margin-bottom:2px}.tab.active{background:#19283b;color:#fff}.tab.locked{opacity:.45}
 
-/* Prototype 0.4.4 visual polish */
+/* Prototype 0.5 visual polish */
 .training-complex{position:absolute;left:0;right:0;top:108px;height:120px;z-index:2;pointer-events:none}
 .facility{position:absolute;bottom:0;border:3px solid #263746;border-bottom:0;background:linear-gradient(#d7e0e3,#aab7bd);box-shadow:0 6px 0 #0002}
 .facility span{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;font-size:9px;font-weight:950;color:#2d3d48;letter-spacing:.08em}
@@ -167,9 +190,9 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
 <div class="toast" id="toast"></div>
 
 <div class="modal" id="onboard"><div class="box">
-  <div class="tag">PROTOTYPE 0.4.4</div>
+  <div class="tag">PROTOTYPE 0.5</div>
   <h1>Crea il tuo calciatore</h1>
-  <p>Prototype 0.4.4: crea il tuo calciatore e personalizza il suo aspetto. Le scelte resteranno visibili nella Home e nel Locker Room.</p>
+  <p>Prototype 0.5: Training Ground ampliato con Dribbling Challenge. La personalizzazione resta funzionante ma con grafica da rivedere.</p>
   <div class="field"><label>Nome calciatore</label><input id="nameInput" maxlength="18" value="Dyonic"></div>
   <div class="field"><label>Piede preferito</label><select id="footInput"><option>Destro</option><option>Sinistro</option></select></div>
   <div class="custom-preview" id="onboardPreview"><div class="avatar-portrait" aria-label="Anteprima volto"></div></div><button class="btn alt" id="openCustomizerOnboard" style="width:100%;margin-bottom:8px">Personalizza aspetto</button>
@@ -177,7 +200,7 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
 </div></div>
 
 <div class="modal" id="customizer"><div class="box">
-  <div class="tag">LOCKER ROOM · ASPETTO · v0.4.4</div>
+  <div class="tag">LOCKER ROOM · ASPETTO · v0.5</div>
   <h1 style="margin-bottom:4px">Personalizza il giocatore</h1>
   <p>Modifiche cosmetiche: non cambiano le statistiche.</p>
   <div class="custom-preview"><div class="avatar-portrait" aria-label="Anteprima personalizzazione"></div></div><div class="custom-section"><label>Acconciatura</label><div class="style-row" id="hairStyles"></div></div>
@@ -241,7 +264,7 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
       </button>
 
       <div class="status-pill ready" id="playerStatus">Pronto ad allenarsi</div>
-      <div class="footballer" aria-label="Il tuo calciatore">
+      <div class="footballer" id="homePlayer" aria-label="Il tuo calciatore">
         <div class="shadow"></div>
         <div class="avatar-mini-head" aria-hidden="true"></div>
         <div class="neck"></div>
@@ -285,6 +308,28 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
       <div class="msg" id="msg">PRONTO</div>
     </div>
   </div>
+  <div class="card" id="dribbleCard">
+    <div class="title">Allenamento attivo · nuovo</div>
+    <strong>Dribbling Challenge</strong>
+    <p style="font-size:12px;color:#94a6bf">10 porte · costo 6 Energia. Leggi rapidamente il lato della porta e porta il pallone nella direzione corretta.</p>
+    <button class="btn" id="startDribble">Inizia Dribbling Challenge</button>
+    <div id="dribbleGame" style="display:none">
+      <div class="dribble-lane">
+        <div class="dribble-gate left" id="gateLeft"></div>
+        <div class="dribble-gate right" id="gateRight"></div>
+        <div class="dribble-cue" id="dribbleCue">←</div>
+        <div class="dribble-runner" id="dribbleRunner">
+          <div class="avatar-mini-head"></div><div class="runner-body"></div><div class="runner-ball">⚽</div>
+        </div>
+      </div>
+      <div class="dribble-controls">
+        <button class="btn alt" id="dribbleLeft">← Sinistra</button>
+        <button class="btn alt" id="dribbleRight">Destra →</button>
+      </div>
+      <div class="training-result"><span>Porta <b id="dRound">0</b>/10</span><span>Punti <b id="dScore">0</b></span></div>
+      <div class="msg" id="dMsg">PRONTO</div>
+    </div>
+  </div>
   <div class="card">
     <div class="title">Allenamento idle</div>
     <p style="font-size:12px;color:#94a6bf">Scegli focus e durata. In produzione arriveremo fino a timer di ore.</p>
@@ -302,7 +347,7 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
     <div class="stat"><b>ATT</b><span>Ruolo</span></div>
   </div></div>
   <div class="card"><div class="title">Skill Tree ATT · prototipo</div><div class="skillgrid" id="skills"></div></div>
-  <div class="card"><button class="btn ghost" id="reset" style="width:100%">Azzera Prototype 0.4.4</button></div>
+  <div class="card"><button class="btn ghost" id="reset" style="width:100%">Azzera Prototype 0.5</button></div>
 </section>
 
 <section class="view" id="club">
@@ -311,7 +356,7 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
 </section>
 
 <section class="view" id="more">
-  <div class="header"><div class="brand">ALTRO</div><div class="tag">PROTOTYPE 0.4.4</div></div>
+  <div class="header"><div class="brand">ALTRO</div><div class="tag">PROTOTYPE 0.5</div></div>
   <div class="card">
     <div class="title">Locker Room</div>
     <div class="locker-avatar">
@@ -323,7 +368,7 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
         <div class="boot b1"></div><div class="boot b2"></div><div class="ball"></div>
       </div>
     </div>
-    <p class="small-muted">Capelli, colore capelli, occhi, pelle, stile e colore barba e divisa di allenamento sono modificabili. In questa build sono solo cosmetici.</p>
+    <p class="small-muted">Personalizzazione base funzionante e salvata. Lo stile grafico dell’avatar resta segnato da rivedere più avanti.</p>
     <button class="btn" id="openLockerCustomizer" style="width:100%">Modifica aspetto</button>
   </div>
   <div class="card"><div class="title">In sviluppo</div><p class="small-muted" style="margin:0">Scarpini, accessori, Sponsor, profilo, amici, notifiche e Chat Globale verranno aggiunti gradualmente.</p></div>
@@ -355,7 +400,7 @@ function defaultAppearance(){return {skin:"#d79a6d",skin2:"#bd7d56",hair:"#231a1
 function fresh(){var s={made:false,name:"Dyonic",foot:"Destro",ps:0,invested:0,energy:100,last:Date.now(),idle:null,focus:"precision",dur:30,appearance:defaultAppearance(),skills:{}};Object.keys(SK).forEach(function(k){s.skills[k]=0});return s}
 var S;try{S=JSON.parse(localStorage.getItem(KEY))||fresh()}catch(e){S=fresh()}
 Object.keys(SK).forEach(function(k){if(S.skills[k]==null)S.skills[k]=0});if(!S.appearance)S.appearance=defaultAppearance();if(!S.appearance.beardColor)S.appearance.beardColor=S.appearance.hair||"#231a16";
-var G=null;
+var G=null,D=null;
 function save(){localStorage.setItem(KEY,JSON.stringify(S))}
 function toast(x){var t=document.getElementById("toast");t.textContent=x;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},1600)}
 function updateEnergy(){var now=Date.now();if(S.energy>=MAX){S.energy=MAX;S.last=now;return}var g=Math.floor((now-S.last)/REGEN);if(g>0){S.energy=Math.min(MAX,S.energy+g);S.last+=g*REGEN;save()}}
@@ -491,6 +536,7 @@ function renderIdle(){
  }
  var status=document.getElementById("playerStatus"),bubble=document.getElementById("idleBubble");
  bubble.style.display=st.type==="ready"?"grid":"none";
+ var hp=document.getElementById("homePlayer");if(hp)hp.classList.toggle("training-state",st.type==="run");
  if(st.type==="run"){status.textContent=st.home;status.className="status-pill idle"}
  else if(st.type==="ready"){status.textContent="Allenamento completato · raccogli";status.className="status-pill idle"}
  else{status.textContent=S.energy>=COST?"Pronto ad allenarsi":"Energia in recupero";status.className="status-pill ready"}
@@ -533,11 +579,11 @@ document.getElementById("startIdle").onclick=function(){
  if(S.idle&&!S.idle.claimed&&Date.now()<S.idle.end){toast("Allenamento già in corso");return}
  var r=Math.max(.25,S.dur/60*.65);S.idle={focus:S.focus,end:Date.now()+S.dur*1000,reward:r,claimed:false};save();toast("Allenamento avviato");render()
 };
-document.getElementById("dribblingHotspot").onclick=function(){toast("Dribbling Challenge: prossimo incremento")}
+document.getElementById("dribblingHotspot").onclick=function(){go("training");setTimeout(function(){document.getElementById("dribbleCard").scrollIntoView({behavior:"smooth",block:"start"})},80)}
 document.getElementById("matchHotspot").onclick=function(){toast("Matchday arriverà con il Match Engine")}
 function buildGoal(){var g=document.getElementById("goal");g.innerHTML="";for(var i=0;i<9;i++){(function(n){var z=document.createElement("div");z.className="zone";z.onclick=function(){tap(n)};g.appendChild(z)})(i)}}
 function start(){
- updateEnergy();if(G)return;if(S.energy<COST){toast("Energia insufficiente");return}
+ updateEnergy();if(G||D)return;if(S.energy<COST){toast("Energia insufficiente");return}
  S.energy-=COST;S.last=Date.now();G={shot:0,score:0,target:0,active:false,t:null,end:0};
  document.getElementById("game").style.display="block";document.getElementById("startGame").disabled=true;next();save();render()
 }
@@ -562,6 +608,49 @@ function finish(){
  document.getElementById("msg").textContent="Voto "+grade+" · +"+reward.toFixed(2)+" PS";document.getElementById("startGame").disabled=false;document.getElementById("startGame").textContent="Ripeti esercizio";
  save();toast("Finalizzazione: "+grade+" · +"+reward.toFixed(2)+" PS");render()
 }
+function startDribble(){
+ updateEnergy();if(G||D)return;if(S.energy<COST){toast("Energia insufficiente");return}
+ S.energy-=COST;S.last=Date.now();
+ D={round:0,score:0,target:"left",active:false,t:null,end:0};
+ document.getElementById("dribbleGame").style.display="block";
+ document.getElementById("startDribble").disabled=true;
+ save();render();dNext();
+}
+function dNext(){
+ if(!D)return;
+ if(D.round>=10){dFinish();return}
+ D.round++;D.target=Math.random()<.5?"left":"right";D.active=true;D.end=Date.now()+1200;
+ var gl=document.getElementById("gateLeft"),gr=document.getElementById("gateRight"),r=document.getElementById("dribbleRunner");
+ gl.className="dribble-gate left";gr.className="dribble-gate right";r.className="dribble-runner";
+ document.getElementById("dribbleCue").textContent=D.target==="left"?"←":"→";
+ document.getElementById("dRound").textContent=D.round;document.getElementById("dScore").textContent=D.score;
+ document.getElementById("dMsg").textContent="PORTA IL PALLONE A "+(D.target==="left"?"SINISTRA":"DESTRA");
+ clearTimeout(D.t);D.t=setTimeout(function(){dResolve(null)},1200);
+}
+function dTap(dir){if(D&&D.active)dResolve(dir)}
+function dResolve(dir){
+ if(!D||!D.active)return;D.active=false;clearTimeout(D.t);
+ var ok=dir===D.target,gate=document.getElementById(D.target==="left"?"gateLeft":"gateRight"),r=document.getElementById("dribbleRunner");
+ if(dir)r.classList.add(dir);
+ gate.classList.add(ok?"good":"bad");
+ if(ok){
+   var bonus=Math.max(0,Math.round((D.end-Date.now())/8));
+   D.score+=100+bonus;document.getElementById("dMsg").textContent="SUPERATO!";
+ }else document.getElementById("dMsg").textContent=dir?"DIREZIONE SBAGLIATA":"TROPPO LENTO";
+ document.getElementById("dScore").textContent=D.score;
+ setTimeout(dNext,480);
+}
+function dFinish(){
+ var ratio=Math.min(1,D.score/2450),grade="C",reward=.75;
+ if(ratio>=.82){grade="S";reward=1}else if(ratio>=.65){grade="A";reward=.95}else if(ratio>=.45){grade="B";reward=.85}
+ S.ps+=reward;D=null;
+ document.getElementById("dMsg").textContent="Voto "+grade+" · +"+reward.toFixed(2)+" PS";
+ document.getElementById("startDribble").disabled=false;document.getElementById("startDribble").textContent="Ripeti Dribbling Challenge";
+ save();toast("Dribbling: "+grade+" · +"+reward.toFixed(2)+" PS");render();
+}
+document.getElementById("startDribble").onclick=startDribble;
+document.getElementById("dribbleLeft").onclick=function(){dTap("left")};
+document.getElementById("dribbleRight").onclick=function(){dTap("right")};
 document.getElementById("openCustomizerOnboard").onclick=openCustomizer;
 document.getElementById("openLockerCustomizer").onclick=openCustomizer;
 document.getElementById("cancelCustom").onclick=function(){closeCustomizer(false)};

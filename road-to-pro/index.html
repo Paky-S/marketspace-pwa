@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1420">
-<title>Road to Pro — Prototype 0.5</title>
+<title>Road to Pro — Prototype 0.6</title>
 <style>
 :root{
   --bg:#09111a;--panel:#101a27;--panel2:#0c1520;--line:#273950;
@@ -113,7 +113,7 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
 .skillgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.skill{background:var(--panel2);border:1px solid #25364e;border-radius:14px;padding:11px}.skill.lock{opacity:.52}.skill h4{margin:0;font-size:13px}.lvl{font-size:22px;color:var(--green);font-weight:950;margin-top:5px}.req{font-size:10px;color:var(--muted);min-height:30px;margin-top:4px}.skill .btn{width:100%;margin-top:7px}
 .note{margin:10px 12px 0;font-size:11px;color:#ffd98a;padding:8px 10px;border-radius:11px;background:#2a2313;border:1px solid #59491d}
 
-/* TRAINING GROUND 0.5 */
+/* TRAINING GROUND 0.6 */
 .dribble-lane{position:relative;height:220px;margin:12px 0 10px;border:2px solid #55715f;border-radius:18px;overflow:hidden;background:
 linear-gradient(90deg,transparent 0 31%,#ffffff25 31% 32%,transparent 32% 68%,#ffffff25 68% 69%,transparent 69%),
 repeating-linear-gradient(0deg,#347d45 0 36px,#3c8a4d 36px 72px)}
@@ -136,11 +136,23 @@ repeating-linear-gradient(0deg,#347d45 0 36px,#3c8a4d 36px 72px)}
 @keyframes trainJog{0%,100%{transform:translate(-50%,-50%)}50%{transform:translate(-50%,calc(-50% - 7px))}}
 @keyframes trainingBall{0%,100%{transform:translate(0,0) rotate(0)}50%{transform:translate(-10px,-16px) rotate(85deg)}}
 
+/* One Touch */
+.one-touch-stage{position:relative;height:230px;margin:12px 0 10px;border:2px solid #546f61;border-radius:18px;overflow:hidden;background:
+linear-gradient(180deg,#8ccde5 0 31%,#397f49 31% 100%)}
+.ot-goal{position:absolute;left:50%;top:18px;width:210px;height:90px;transform:translateX(-50%);border:5px solid #f4f6f7;border-bottom:3px solid #f4f6f7;background:repeating-linear-gradient(45deg,#ffffff22 0 4px,#0000 4px 12px);display:grid;grid-template-columns:repeat(3,1fr);padding:5px;gap:5px}
+.ot-zone{border:2px dashed #ffffff55;border-radius:6px;transition:.15s}.ot-zone.target{background:#ffd45f66;border-color:#ffe68e}.ot-zone.hit{background:#66e9a477;border-color:#8affbd}.ot-zone.miss{background:#ff6f7477;border-color:#ff9da0}
+.ot-pass-label{position:absolute;left:50%;top:116px;transform:translateX(-50%);font-size:11px;font-weight:950;background:#0b1723d9;border:1px solid #46617b;border-radius:999px;padding:5px 9px;white-space:nowrap}
+.ot-track{position:absolute;left:22px;right:22px;bottom:42px;height:30px;border:2px solid #1c3442;border-radius:999px;background:#102534;overflow:hidden;box-shadow:inset 0 3px 8px #0005}
+.ot-perfect{position:absolute;left:43%;width:18%;top:0;bottom:0;background:#66e5a066;border-left:2px solid #77f5ad;border-right:2px solid #77f5ad}
+.ot-ball{position:absolute;top:2px;left:0;width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0 37%,#20252d 39% 48%,#fff 50% 70%,#20252d 72%);border:2px solid #1a2027;transform:translateX(-50%);filter:drop-shadow(0 2px 2px #0005)}
+.ot-controls{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.ot-controls button{padding:12px 5px;font-size:12px}
+.ot-hint{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);font-size:9px;color:#e6f3ff;background:#0a1420a8;padding:3px 7px;border-radius:999px;white-space:nowrap}
+
 /* bottom nav */
 .tabs{position:fixed;z-index:60;bottom:0;left:50%;transform:translateX(-50%);width:min(560px,100%);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 8px calc(7px + env(safe-area-inset-bottom));background:#09111bf2;border-top:1px solid #26394f;backdrop-filter:blur(14px)}
 .tab{border:0;background:transparent;color:#8295ac;padding:8px 2px;border-radius:11px;font-size:10px;font-weight:900}.tab b{display:block;font-size:18px;line-height:18px;margin-bottom:2px}.tab.active{background:#19283b;color:#fff}.tab.locked{opacity:.45}
 
-/* Prototype 0.5 visual polish */
+/* Prototype 0.6 visual polish */
 .training-complex{position:absolute;left:0;right:0;top:108px;height:120px;z-index:2;pointer-events:none}
 .facility{position:absolute;bottom:0;border:3px solid #263746;border-bottom:0;background:linear-gradient(#d7e0e3,#aab7bd);box-shadow:0 6px 0 #0002}
 .facility span{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;font-size:9px;font-weight:950;color:#2d3d48;letter-spacing:.08em}
@@ -190,9 +202,9 @@ repeating-linear-gradient(0deg,#347d45 0 36px,#3c8a4d 36px 72px)}
 <div class="toast" id="toast"></div>
 
 <div class="modal" id="onboard"><div class="box">
-  <div class="tag">PROTOTYPE 0.5</div>
+  <div class="tag">PROTOTYPE 0.6</div>
   <h1>Crea il tuo calciatore</h1>
-  <p>Prototype 0.5: Training Ground ampliato con Dribbling Challenge. La personalizzazione resta funzionante ma con grafica da rivedere.</p>
+  <p>Prototype 0.6: pacchetto ATT completato con Finalizzazione, Dribbling Challenge e One Touch.</p>
   <div class="field"><label>Nome calciatore</label><input id="nameInput" maxlength="18" value="Dyonic"></div>
   <div class="field"><label>Piede preferito</label><select id="footInput"><option>Destro</option><option>Sinistro</option></select></div>
   <div class="custom-preview" id="onboardPreview"><div class="avatar-portrait" aria-label="Anteprima volto"></div></div><button class="btn alt" id="openCustomizerOnboard" style="width:100%;margin-bottom:8px">Personalizza aspetto</button>
@@ -243,7 +255,7 @@ repeating-linear-gradient(0deg,#347d45 0 36px,#3c8a4d 36px 72px)}
     </div>
     <div class="field-scene">
       <div class="center-circle"></div><div class="track"></div>
-      <div class="coach"><div class="coach-head"></div><div class="coach-body"></div><div class="clipboard"></div><span>Coach</span></div>
+      <button class="hotspot coach" id="oneTouchHotspot"><div class="coach-head"></div><div class="coach-body"></div><div class="clipboard"></div><span>One Touch</span></button>
       <div class="drill-ring r1"></div><div class="drill-ring r2"></div><div class="drill-ring r3"></div>
 
       <button class="hotspot goal-post" data-go="training">
@@ -330,6 +342,31 @@ repeating-linear-gradient(0deg,#347d45 0 36px,#3c8a4d 36px 72px)}
       <div class="msg" id="dMsg">PRONTO</div>
     </div>
   </div>
+  <div class="card" id="oneTouchCard">
+    <div class="title">Allenamento attivo · nuovo</div>
+    <strong>One Touch</strong>
+    <p style="font-size:12px;color:#94a6bf">10 palloni · costo 6 Energia. Leggi il bersaglio e gioca di prima quando il pallone entra nella zona verde.</p>
+    <button class="btn" id="startOneTouch">Inizia One Touch</button>
+    <div id="oneTouchGame" style="display:none">
+      <div class="one-touch-stage">
+        <div class="ot-goal">
+          <div class="ot-zone" data-ot="left"></div>
+          <div class="ot-zone" data-ot="center"></div>
+          <div class="ot-zone" data-ot="right"></div>
+        </div>
+        <div class="ot-pass-label" id="otTargetLabel">Bersaglio: CENTRO</div>
+        <div class="ot-track"><div class="ot-perfect"></div><div class="ot-ball" id="otBall"></div></div>
+        <div class="ot-hint">Colpisci nella zona verde</div>
+      </div>
+      <div class="ot-controls">
+        <button class="btn alt" id="otLeft">← Sinistra</button>
+        <button class="btn alt" id="otCenter">Centro</button>
+        <button class="btn alt" id="otRight">Destra →</button>
+      </div>
+      <div class="training-result"><span>Pallone <b id="otRound">0</b>/10</span><span>Punti <b id="otScore">0</b></span></div>
+      <div class="msg" id="otMsg">PRONTO</div>
+    </div>
+  </div>
   <div class="card">
     <div class="title">Allenamento idle</div>
     <p style="font-size:12px;color:#94a6bf">Scegli focus e durata. In produzione arriveremo fino a timer di ore.</p>
@@ -347,7 +384,7 @@ repeating-linear-gradient(0deg,#347d45 0 36px,#3c8a4d 36px 72px)}
     <div class="stat"><b>ATT</b><span>Ruolo</span></div>
   </div></div>
   <div class="card"><div class="title">Skill Tree ATT · prototipo</div><div class="skillgrid" id="skills"></div></div>
-  <div class="card"><button class="btn ghost" id="reset" style="width:100%">Azzera Prototype 0.5</button></div>
+  <div class="card"><button class="btn ghost" id="reset" style="width:100%">Azzera Prototype 0.6</button></div>
 </section>
 
 <section class="view" id="club">
@@ -356,7 +393,7 @@ repeating-linear-gradient(0deg,#347d45 0 36px,#3c8a4d 36px 72px)}
 </section>
 
 <section class="view" id="more">
-  <div class="header"><div class="brand">ALTRO</div><div class="tag">PROTOTYPE 0.5</div></div>
+  <div class="header"><div class="brand">ALTRO</div><div class="tag">PROTOTYPE 0.6</div></div>
   <div class="card">
     <div class="title">Locker Room</div>
     <div class="locker-avatar">
@@ -400,7 +437,7 @@ function defaultAppearance(){return {skin:"#d79a6d",skin2:"#bd7d56",hair:"#231a1
 function fresh(){var s={made:false,name:"Dyonic",foot:"Destro",ps:0,invested:0,energy:100,last:Date.now(),idle:null,focus:"precision",dur:30,appearance:defaultAppearance(),skills:{}};Object.keys(SK).forEach(function(k){s.skills[k]=0});return s}
 var S;try{S=JSON.parse(localStorage.getItem(KEY))||fresh()}catch(e){S=fresh()}
 Object.keys(SK).forEach(function(k){if(S.skills[k]==null)S.skills[k]=0});if(!S.appearance)S.appearance=defaultAppearance();if(!S.appearance.beardColor)S.appearance.beardColor=S.appearance.hair||"#231a16";
-var G=null,D=null;
+var G=null,D=null,T=null;
 function save(){localStorage.setItem(KEY,JSON.stringify(S))}
 function toast(x){var t=document.getElementById("toast");t.textContent=x;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},1600)}
 function updateEnergy(){var now=Date.now();if(S.energy>=MAX){S.energy=MAX;S.last=now;return}var g=Math.floor((now-S.last)/REGEN);if(g>0){S.energy=Math.min(MAX,S.energy+g);S.last+=g*REGEN;save()}}
@@ -580,10 +617,11 @@ document.getElementById("startIdle").onclick=function(){
  var r=Math.max(.25,S.dur/60*.65);S.idle={focus:S.focus,end:Date.now()+S.dur*1000,reward:r,claimed:false};save();toast("Allenamento avviato");render()
 };
 document.getElementById("dribblingHotspot").onclick=function(){go("training");setTimeout(function(){document.getElementById("dribbleCard").scrollIntoView({behavior:"smooth",block:"start"})},80)}
+document.getElementById("oneTouchHotspot").onclick=function(){go("training");setTimeout(function(){document.getElementById("oneTouchCard").scrollIntoView({behavior:"smooth",block:"start"})},80)}
 document.getElementById("matchHotspot").onclick=function(){toast("Matchday arriverà con il Match Engine")}
 function buildGoal(){var g=document.getElementById("goal");g.innerHTML="";for(var i=0;i<9;i++){(function(n){var z=document.createElement("div");z.className="zone";z.onclick=function(){tap(n)};g.appendChild(z)})(i)}}
 function start(){
- updateEnergy();if(G||D)return;if(S.energy<COST){toast("Energia insufficiente");return}
+ updateEnergy();if(G||D||T)return;if(S.energy<COST){toast("Energia insufficiente");return}
  S.energy-=COST;S.last=Date.now();G={shot:0,score:0,target:0,active:false,t:null,end:0};
  document.getElementById("game").style.display="block";document.getElementById("startGame").disabled=true;next();save();render()
 }
@@ -609,7 +647,7 @@ function finish(){
  save();toast("Finalizzazione: "+grade+" · +"+reward.toFixed(2)+" PS");render()
 }
 function startDribble(){
- updateEnergy();if(G||D)return;if(S.energy<COST){toast("Energia insufficiente");return}
+ updateEnergy();if(G||D||T)return;if(S.energy<COST){toast("Energia insufficiente");return}
  S.energy-=COST;S.last=Date.now();
  D={round:0,score:0,target:"left",active:false,t:null,end:0};
  document.getElementById("dribbleGame").style.display="block";
@@ -651,6 +689,72 @@ function dFinish(){
 document.getElementById("startDribble").onclick=startDribble;
 document.getElementById("dribbleLeft").onclick=function(){dTap("left")};
 document.getElementById("dribbleRight").onclick=function(){dTap("right")};
+function startOneTouch(){
+ updateEnergy();if(G||D||T)return;if(S.energy<COST){toast("Energia insufficiente");return}
+ S.energy-=COST;S.last=Date.now();
+ T={round:0,score:0,target:"center",active:false,start:0,duration:1500,raf:0};
+ document.getElementById("oneTouchGame").style.display="block";
+ document.getElementById("startOneTouch").disabled=true;
+ save();render();otNext();
+}
+function otNext(){
+ if(!T)return;
+ if(T.round>=10){otFinish();return}
+ T.round++;T.target=["left","center","right"][Math.floor(Math.random()*3)];T.active=true;T.start=performance.now();
+ document.querySelectorAll(".ot-zone").forEach(function(z){z.className="ot-zone"+(z.getAttribute("data-ot")===T.target?" target":"")});
+ document.getElementById("otTargetLabel").textContent="Bersaglio: "+(T.target==="left"?"SINISTRA":T.target==="right"?"DESTRA":"CENTRO");
+ document.getElementById("otRound").textContent=T.round;document.getElementById("otScore").textContent=T.score;
+ document.getElementById("otMsg").textContent="ASPETTA IL TEMPO GIUSTO";
+ cancelAnimationFrame(T.raf);
+ function frame(now){
+   if(!T||!T.active)return;
+   var p=Math.min(1,(now-T.start)/T.duration);
+   document.getElementById("otBall").style.left=(p*100)+"%";
+   if(p>=1){otResolve(null,p);return}
+   T.raf=requestAnimationFrame(frame);
+ }
+ T.raf=requestAnimationFrame(frame);
+}
+function otTap(dir){
+ if(!T||!T.active)return;
+ var p=Math.min(1,(performance.now()-T.start)/T.duration);
+ otResolve(dir,p);
+}
+function otResolve(dir,p){
+ if(!T||!T.active)return;T.active=false;cancelAnimationFrame(T.raf);
+ var correctTarget=dir===T.target;
+ var timing=Math.abs(p-.52);
+ var inWindow=p>=.41&&p<=.63;
+ var ok=correctTarget&&inWindow;
+ var targetEl=document.querySelector('.ot-zone[data-ot="'+T.target+'"]');
+ if(targetEl)targetEl.classList.add(ok?"hit":"miss");
+ if(ok){
+   var timingQuality=Math.max(0,1-(timing/.11));
+   var bonus=Math.round(120*timingQuality);
+   T.score+=100+bonus;
+   document.getElementById("otMsg").textContent=bonus>=95?"PERFETTO!":"BUON ONE TOUCH!";
+ }else if(!dir){
+   document.getElementById("otMsg").textContent="TROPPO TARDI";
+ }else if(!correctTarget){
+   document.getElementById("otMsg").textContent="BERSAGLIO SBAGLIATO";
+ }else{
+   document.getElementById("otMsg").textContent=p<.41?"TROPPO PRESTO":"TROPPO TARDI";
+ }
+ document.getElementById("otScore").textContent=T.score;
+ setTimeout(otNext,520);
+}
+function otFinish(){
+ var ratio=Math.min(1,T.score/2200),grade="C",reward=.75;
+ if(ratio>=.82){grade="S";reward=1}else if(ratio>=.65){grade="A";reward=.95}else if(ratio>=.45){grade="B";reward=.85}
+ S.ps+=reward;cancelAnimationFrame(T.raf);T=null;
+ document.getElementById("otMsg").textContent="Voto "+grade+" · +"+reward.toFixed(2)+" PS";
+ document.getElementById("startOneTouch").disabled=false;document.getElementById("startOneTouch").textContent="Ripeti One Touch";
+ save();toast("One Touch: "+grade+" · +"+reward.toFixed(2)+" PS");render();
+}
+document.getElementById("startOneTouch").onclick=startOneTouch;
+document.getElementById("otLeft").onclick=function(){otTap("left")};
+document.getElementById("otCenter").onclick=function(){otTap("center")};
+document.getElementById("otRight").onclick=function(){otTap("right")};
 document.getElementById("openCustomizerOnboard").onclick=openCustomizer;
 document.getElementById("openLockerCustomizer").onclick=openCustomizer;
 document.getElementById("cancelCustom").onclick=function(){closeCustomizer(false)};

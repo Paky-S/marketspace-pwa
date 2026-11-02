@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1420">
-<title>Road to Pro — Prototype 0.4.3</title>
+<title>Road to Pro — Prototype 0.4.4</title>
 <style>
 :root{
   --bg:#09111a;--panel:#101a27;--panel2:#0c1520;--line:#273950;
@@ -117,7 +117,7 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
 .tabs{position:fixed;z-index:60;bottom:0;left:50%;transform:translateX(-50%);width:min(560px,100%);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 8px calc(7px + env(safe-area-inset-bottom));background:#09111bf2;border-top:1px solid #26394f;backdrop-filter:blur(14px)}
 .tab{border:0;background:transparent;color:#8295ac;padding:8px 2px;border-radius:11px;font-size:10px;font-weight:900}.tab b{display:block;font-size:18px;line-height:18px;margin-bottom:2px}.tab.active{background:#19283b;color:#fff}.tab.locked{opacity:.45}
 
-/* Prototype 0.4.3 visual polish */
+/* Prototype 0.4.4 visual polish */
 .training-complex{position:absolute;left:0;right:0;top:108px;height:120px;z-index:2;pointer-events:none}
 .facility{position:absolute;bottom:0;border:3px solid #263746;border-bottom:0;background:linear-gradient(#d7e0e3,#aab7bd);box-shadow:0 6px 0 #0002}
 .facility span{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;font-size:9px;font-weight:950;color:#2d3d48;letter-spacing:.08em}
@@ -167,9 +167,9 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
 <div class="toast" id="toast"></div>
 
 <div class="modal" id="onboard"><div class="box">
-  <div class="tag">PROTOTYPE 0.4.3</div>
+  <div class="tag">PROTOTYPE 0.4.4</div>
   <h1>Crea il tuo calciatore</h1>
-  <p>Prototype 0.4.3: crea il tuo calciatore e personalizza il suo aspetto. Le scelte resteranno visibili nella Home e nel Locker Room.</p>
+  <p>Prototype 0.4.4: crea il tuo calciatore e personalizza il suo aspetto. Le scelte resteranno visibili nella Home e nel Locker Room.</p>
   <div class="field"><label>Nome calciatore</label><input id="nameInput" maxlength="18" value="Dyonic"></div>
   <div class="field"><label>Piede preferito</label><select id="footInput"><option>Destro</option><option>Sinistro</option></select></div>
   <div class="custom-preview" id="onboardPreview"><div class="avatar-portrait" aria-label="Anteprima volto"></div></div><button class="btn alt" id="openCustomizerOnboard" style="width:100%;margin-bottom:8px">Personalizza aspetto</button>
@@ -177,7 +177,7 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
 </div></div>
 
 <div class="modal" id="customizer"><div class="box">
-  <div class="tag">LOCKER ROOM · ASPETTO</div>
+  <div class="tag">LOCKER ROOM · ASPETTO · v0.4.4</div>
   <h1 style="margin-bottom:4px">Personalizza il giocatore</h1>
   <p>Modifiche cosmetiche: non cambiano le statistiche.</p>
   <div class="custom-preview"><div class="avatar-portrait" aria-label="Anteprima personalizzazione"></div></div><div class="custom-section"><label>Acconciatura</label><div class="style-row" id="hairStyles"></div></div>
@@ -302,7 +302,7 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
     <div class="stat"><b>ATT</b><span>Ruolo</span></div>
   </div></div>
   <div class="card"><div class="title">Skill Tree ATT · prototipo</div><div class="skillgrid" id="skills"></div></div>
-  <div class="card"><button class="btn ghost" id="reset" style="width:100%">Azzera Prototype 0.4.3</button></div>
+  <div class="card"><button class="btn ghost" id="reset" style="width:100%">Azzera Prototype 0.4.4</button></div>
 </section>
 
 <section class="view" id="club">
@@ -311,7 +311,7 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
 </section>
 
 <section class="view" id="more">
-  <div class="header"><div class="brand">ALTRO</div><div class="tag">PROTOTYPE 0.4.3</div></div>
+  <div class="header"><div class="brand">ALTRO</div><div class="tag">PROTOTYPE 0.4.4</div></div>
   <div class="card">
     <div class="title">Locker Room</div>
     <div class="locker-avatar">
@@ -406,8 +406,9 @@ function portraitSvg(a,mini){
    '<path class="avatar-brow" stroke="'+hair+'" d="M31 46 Q38 42 45 46"/><path class="avatar-brow" stroke="'+hair+'" d="M55 46 Q62 42 69 46"/>'+
    '<ellipse class="avatar-eye-line" cx="38" cy="53" rx="8" ry="5"/><circle fill="'+eye+'" stroke="#211713" stroke-width="1.5" cx="38" cy="53" r="3.6"/><circle fill="#fff" cx="39" cy="52" r="1"/>'+
    '<ellipse class="avatar-eye-line" cx="62" cy="53" rx="8" ry="5"/><circle fill="'+eye+'" stroke="#211713" stroke-width="1.5" cx="62" cy="53" r="3.6"/><circle fill="#fff" cx="63" cy="52" r="1"/>'+
+   beardMarkup()+
    '<path class="avatar-feature" d="M50 56 Q47 66 51 67"/><path class="avatar-mouth" d="M42 74 Q50 79 58 74"/>'+
-   beardMarkup()+'</svg>';
+   '</svg>';
  }
  return '<svg viewBox="0 0 220 250" role="img" aria-label="Anteprima volto giocatore">'+
    '<path fill="'+a.jersey2+'" stroke="#15304b" stroke-width="5" d="M24 250 Q30 192 78 178 L142 178 Q190 192 196 250 Z"/>'+
@@ -419,9 +420,10 @@ function portraitSvg(a,mini){
    '<path class="avatar-brow" stroke="'+hair+'" d="M72 91 Q84 84 96 90"/><path class="avatar-brow" stroke="'+hair+'" d="M124 90 Q136 84 148 91"/>'+
    '<path class="avatar-eye-line" d="M68 107 Q82 98 98 107 Q82 117 68 107 Z"/><circle fill="'+eye+'" stroke="#211713" stroke-width="2" cx="83" cy="107" r="6"/><circle fill="#fff" cx="85" cy="105" r="1.8"/>'+
    '<path class="avatar-eye-line" d="M122 107 Q138 98 152 107 Q138 117 122 107 Z"/><circle fill="'+eye+'" stroke="#211713" stroke-width="2" cx="137" cy="107" r="6"/><circle fill="#fff" cx="139" cy="105" r="1.8"/>'+
+   beardMarkup()+
    '<path class="avatar-feature" d="M110 111 Q104 132 111 137 Q117 138 121 134"/>'+
    '<path class="avatar-mouth" d="M92 153 Q110 163 128 153"/>'+
-   beardMarkup()+'</svg>';
+   '</svg>';
 }
 function applyAppearance(a){
  document.querySelectorAll(".footballer").forEach(function(p){

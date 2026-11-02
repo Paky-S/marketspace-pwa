@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1420">
-<title>Road to Pro — Prototype 0.2</title>
+<title>Road to Pro — Prototype 0.3</title>
 <style>
 :root{
   --bg:#09111a;--panel:#101a27;--panel2:#0c1520;--line:#273950;
@@ -88,6 +88,52 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
 /* bottom nav */
 .tabs{position:fixed;z-index:60;bottom:0;left:50%;transform:translateX(-50%);width:min(560px,100%);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 8px calc(7px + env(safe-area-inset-bottom));background:#09111bf2;border-top:1px solid #26394f;backdrop-filter:blur(14px)}
 .tab{border:0;background:transparent;color:#8295ac;padding:8px 2px;border-radius:11px;font-size:10px;font-weight:900}.tab b{display:block;font-size:18px;line-height:18px;margin-bottom:2px}.tab.active{background:#19283b;color:#fff}.tab.locked{opacity:.45}
+
+/* Prototype 0.3 visual polish */
+.training-complex{position:absolute;left:0;right:0;top:108px;height:120px;z-index:2;pointer-events:none}
+.facility{position:absolute;bottom:0;border:3px solid #263746;border-bottom:0;background:linear-gradient(#d7e0e3,#aab7bd);box-shadow:0 6px 0 #0002}
+.facility span{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;font-size:9px;font-weight:950;color:#2d3d48;letter-spacing:.08em}
+.facility.gym{width:112px;height:70px;left:13%;border-radius:12px 12px 0 0}
+.facility.recovery{width:96px;height:60px;right:10%;border-radius:12px 12px 0 0;background:linear-gradient(#e7f3ef,#b7d8cf)}
+.facility:before{content:"";position:absolute;left:12px;right:12px;top:12px;height:24px;background:#79a9c5;border:3px solid #395463;border-radius:5px}
+.fence{position:absolute;left:0;right:0;bottom:-7px;height:23px;border-top:3px solid #526c70;background:repeating-linear-gradient(90deg,transparent 0 15px,#6f8587 15px 17px)}
+.trees{position:absolute;left:2%;right:2%;bottom:7px;display:flex;justify-content:space-between;align-items:flex-end}
+.trees i{display:block;width:34px;height:52px;background:#2f7c45;border:3px solid #285b37;border-radius:50% 50% 36% 36%;position:relative}
+.trees i:after{content:"";position:absolute;width:7px;height:24px;background:#6a4b32;left:11px;bottom:-17px}
+.coach{position:absolute;right:25%;top:36%;width:46px;height:80px;z-index:4;filter:drop-shadow(0 5px 3px #0004)}
+.coach-head{position:absolute;width:22px;height:22px;border-radius:50%;background:#c98d66;left:12px;top:0;border:2px solid #2c211b}
+.coach-body{position:absolute;width:30px;height:42px;left:8px;top:20px;border-radius:7px 7px 12px 12px;background:#182432;border:2px solid #101820}
+.clipboard{position:absolute;width:18px;height:23px;right:-2px;top:29px;background:#f1d89f;border:2px solid #6e5630;border-radius:3px;transform:rotate(8deg)}
+.coach span{position:absolute;top:65px;left:50%;transform:translateX(-50%);font-size:8px;background:#0a1420dc;border:1px solid #38506c;padding:3px 5px;border-radius:7px;font-weight:900}
+.drill-ring{position:absolute;border:4px solid #f3d75d;border-radius:50%;width:34px;height:14px;bottom:17%;opacity:.9;transform:skewX(-12deg)}
+.r1{left:32%}.r2{left:43%;bottom:12%}.r3{left:54%;bottom:19%}
+
+/* richer player */
+.footballer{width:128px;height:176px}
+.player-head{position:absolute;width:40px;height:42px;left:44px;top:3px;border-radius:48% 48% 45% 45%;background:linear-gradient(#dba77a,#c88e61);border:3px solid #2b2019;z-index:6}
+.player-hair{position:absolute;left:-3px;right:-3px;top:-3px;height:17px;background:#231a16;border-radius:19px 19px 5px 5px;border:3px solid #17110e;border-bottom:0}
+.ear{position:absolute;width:7px;height:11px;background:#cc966d;border:2px solid #2b2019;top:18px}.e1{left:-7px;border-radius:7px 0 0 7px}.e2{right:-7px;border-radius:0 7px 7px 0}
+.neck{position:absolute;width:16px;height:14px;background:#c98e63;left:56px;top:39px;border-left:3px solid #2b2019;border-right:3px solid #2b2019;z-index:4}
+.jersey{position:absolute;width:54px;height:66px;left:37px;top:48px;border-radius:12px 12px 18px 18px;background:linear-gradient(90deg,#0a4ca9,#1876e8 48%,#0a4ca9);border:3px solid #10243b;z-index:5}
+.jersey:before{content:"";position:absolute;left:0;right:0;top:8px;height:5px;background:#e8f1ff}
+.jersey span{position:absolute;right:8px;top:19px;color:#fff;font-size:18px;font-weight:950;text-shadow:0 2px 0 #0004}
+.shorts{position:absolute;width:52px;height:27px;left:38px;top:107px;background:#f4f7fa;border:3px solid #263445;border-radius:4px 4px 9px 9px;z-index:4}
+.player-arm{position:absolute;width:15px;height:58px;background:linear-gradient(#176fd7 0 28%,#cb9267 28%);border:3px solid #2d2928;border-radius:9px;top:55px;transform-origin:top;z-index:3}.a1{left:27px;transform:rotate(20deg)}.a2{right:27px;transform:rotate(-28deg);animation:armSwing 2.1s infinite ease-in-out}
+.player-leg{position:absolute;width:18px;height:58px;background:linear-gradient(#d79a6d 0 18%,#f7f8fa 18% 61%,#174ea8 61% 83%,#d79a6d 83%);border:3px solid #27313d;border-radius:9px;top:128px;transform-origin:top;z-index:3}.l1{left:42px;transform:rotate(6deg)}.l2{right:42px;transform:rotate(-16deg);animation:kick2 2.1s infinite ease-in-out}
+.boot{position:absolute;width:26px;height:11px;background:#171b21;border:2px solid #0c0f12;border-radius:8px 10px 4px 4px;bottom:-4px;z-index:7}.b1{left:31px;transform:rotate(5deg)}.b2{right:26px;transform:rotate(-9deg);animation:bootKick 2.1s infinite ease-in-out}
+.shadow{width:88px;left:20px;bottom:-1px;filter:blur(.4px)}
+.ball{width:29px;height:29px;right:2px;bottom:14px}
+@keyframes armSwing{0%,48%,100%{transform:rotate(-28deg)}58%{transform:rotate(-10deg)}70%{transform:rotate(-25deg)}}
+@keyframes kick2{0%,48%,100%{transform:rotate(-16deg)}58%{transform:rotate(-51deg)}70%{transform:rotate(-25deg)}}
+@keyframes bootKick{0%,48%,100%{transform:rotate(-9deg) translate(0,0)}58%{transform:rotate(-35deg) translate(8px,-5px)}70%{transform:rotate(-15deg) translate(2px,-1px)}}
+
+/* make hotspots feel part of the world */
+.hotspot{transition:transform .12s ease,filter .12s ease}.hotspot:active{transform:scale(.94);filter:brightness(1.12) drop-shadow(0 5px 4px #0004)}
+.hotspot .label{background:#0a1420c7;backdrop-filter:blur(4px);border-color:#4b6d8b}
+.home-footer{background:#0a1320df}
+.hub-title b{font-size:24px;letter-spacing:.01em}
+.status-pill{box-shadow:0 6px 18px #0005;backdrop-filter:blur(5px)}
+
 @media(max-height:720px){.field-scene{top:175px;bottom:116px}.footballer{top:53%;transform:translate(-50%,-50%) scale(.88)}.status-pill{top:30%}.hotspot .label{font-size:9px}.home-footer{bottom:10px}}
 </style>
 </head>
@@ -95,9 +141,9 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
 <div class="toast" id="toast"></div>
 
 <div class="modal" id="onboard"><div class="box">
-  <div class="tag">PROTOTYPE 0.2</div>
+  <div class="tag">PROTOTYPE 0.3</div>
   <h1>Crea il tuo calciatore</h1>
-  <p>Questa build prova la nuova Home visuale: il tuo giocatore vive nel centro d'allenamento e la scena diventa il punto di partenza del gioco.</p>
+  <p>Questa build rifinisce la Home visuale: più ambiente, un giocatore più leggibile, staff e dettagli da vero centro d'allenamento.</p>
   <div class="field"><label>Nome calciatore</label><input id="nameInput" maxlength="18" value="Dyonic"></div>
   <div class="field"><label>Piede preferito</label><select id="footInput"><option>Destro</option><option>Sinistro</option></select></div>
   <button class="btn" id="create" style="width:100%">Inizia la carriera</button>
@@ -123,8 +169,16 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
 
     <div class="hub-title"><b>Centro di Allenamento</b><span id="hubSubtitle">Costruisci il tuo calciatore</span></div>
 
+    <div class="training-complex">
+      <div class="facility gym"><span>GYM</span></div>
+      <div class="facility recovery"><span>RECOVERY</span></div>
+      <div class="fence"></div>
+      <div class="trees"><i></i><i></i><i></i><i></i></div>
+    </div>
     <div class="field-scene">
       <div class="center-circle"></div><div class="track"></div>
+      <div class="coach"><div class="coach-head"></div><div class="coach-body"></div><div class="clipboard"></div><span>Coach</span></div>
+      <div class="drill-ring r1"></div><div class="drill-ring r2"></div><div class="drill-ring r3"></div>
 
       <button class="hotspot goal-post" data-go="training">
         <div class="goal-shape"></div><div class="label">Finalizzazione</div>
@@ -145,9 +199,15 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
 
       <div class="status-pill ready" id="playerStatus">Pronto ad allenarsi</div>
       <div class="footballer" aria-label="Il tuo calciatore">
-        <div class="shadow"></div><div class="head"></div><div class="hair"></div>
-        <div class="arm l"></div><div class="arm r"></div><div class="body"></div>
-        <div class="leg l"></div><div class="leg r"></div><div class="ball"></div>
+        <div class="shadow"></div>
+        <div class="player-head"><div class="player-hair"></div><div class="ear e1"></div><div class="ear e2"></div></div>
+        <div class="neck"></div>
+        <div class="jersey"><span>9</span></div>
+        <div class="shorts"></div>
+        <div class="player-arm a1"></div><div class="player-arm a2"></div>
+        <div class="player-leg l1"></div><div class="player-leg l2"></div>
+        <div class="boot b1"></div><div class="boot b2"></div>
+        <div class="ball"></div>
       </div>
     </div>
 
@@ -199,7 +259,7 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
     <div class="stat"><b>ATT</b><span>Ruolo</span></div>
   </div></div>
   <div class="card"><div class="title">Skill Tree ATT · prototipo</div><div class="skillgrid" id="skills"></div></div>
-  <div class="card"><button class="btn ghost" id="reset" style="width:100%">Azzera Prototype 0.2</button></div>
+  <div class="card"><button class="btn ghost" id="reset" style="width:100%">Azzera Prototype 0.3</button></div>
 </section>
 
 <section class="view" id="club">

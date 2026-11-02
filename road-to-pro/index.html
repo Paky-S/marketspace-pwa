@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1420">
-<title>Road to Pro — Prototype 0.4</title>
+<title>Road to Pro — Prototype 0.4.1</title>
 <style>
 :root{
   --bg:#09111a;--panel:#101a27;--panel2:#0c1520;--line:#273950;
   --text:#f4f8ff;--muted:#91a4bb;--green:#72e4a3;--blue:#62a8ff;--cyan:#66e3ff;
-  --yellow:#ffd46b;--red:#ff7b7b;--grass:#4d9c57;--grass2:#3d844b;--track:#b69b70;--skin:#d79a6d;--skin2:#bd7d56;--hair:#231a16;--eye:#5b3828;--jersey:#1876e8;--jersey2:#0a4ca9;
+  --yellow:#ffd46b;--red:#ff7b7b;--grass:#4d9c57;--grass2:#3d844b;--track:#b69b70;--skin:#d79a6d;--skin2:#bd7d56;--hair:#231a16;--beard:#231a16;--eye:#5b3828;--jersey:#1876e8;--jersey2:#0a4ca9;
 }
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -30,17 +30,40 @@ body{overflow-x:hidden}
 .field{margin:11px 0}.field label{display:block;font-size:10px;color:#9fb3ca;text-transform:uppercase;font-weight:900;margin-bottom:5px}.field input,.field select{width:100%;border:1px solid #304863;background:#0a1420;color:#fff;padding:11px;border-radius:11px}
 
 /* CHARACTER CUSTOMIZER */
-.custom-preview{height:210px;position:relative;overflow:hidden;border:1px solid #304862;border-radius:18px;background:linear-gradient(#8fd0ea 0 38%,#59a464 38%);margin:12px 0}
-.custom-preview:after{content:"";position:absolute;left:12px;right:12px;bottom:18px;height:2px;background:#ffffff55}
-.custom-preview .footballer{top:53%;transform:translate(-50%,-50%) scale(1.05)}
+.custom-preview{height:245px;position:relative;overflow:hidden;border:1px solid #304862;border-radius:18px;background:linear-gradient(#93d1e8 0 48%,#4e9859 48%);margin:12px 0}
+.custom-preview:after{content:"";position:absolute;left:0;right:0;bottom:0;height:42px;background:linear-gradient(#0000,#17331d33)}
 .custom-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .custom-section{margin-top:12px}.custom-section>label{display:block;font-size:10px;color:#9fb3ca;text-transform:uppercase;font-weight:900;margin-bottom:7px}
 .swatches{display:flex;flex-wrap:wrap;gap:8px}.swatch{width:34px;height:34px;border-radius:10px;border:3px solid #172638;box-shadow:0 0 0 1px #45607c;position:relative}.swatch.on:after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-weight:950;text-shadow:0 2px 4px #000}
 .style-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.style-choice{border:1px solid #34506b;background:#0c1723;color:#cbd9e8;border-radius:11px;padding:9px 5px;font-size:10px;font-weight:900}.style-choice.on{background:#275176;border-color:#73b6f2;color:#fff}
 .custom-actions{display:flex;gap:8px;margin-top:16px}.custom-actions .btn{flex:1}
-.locker-avatar{height:190px;position:relative;border-radius:16px;overflow:hidden;background:linear-gradient(#9bd8ed 0 36%,#55a260 36%);border:1px solid #314962}
-.locker-avatar .footballer{top:54%;transform:translate(-50%,-50%) scale(.95)}
+.locker-avatar{height:210px;position:relative;border-radius:16px;overflow:hidden;background:linear-gradient(#9bd8ed 0 42%,#55a260 42%);border:1px solid #314962}
+.locker-avatar .footballer{top:56%;transform:translate(-50%,-50%) scale(.95)}
 .small-muted{font-size:11px;color:#91a4bb;line-height:1.4}
+
+/* close-up face preview: safer layering than the old CSS hair blocks */
+.face-preview{position:absolute;left:50%;top:51%;width:170px;height:220px;transform:translate(-50%,-50%);--skin:#d79a6d;--skin2:#bd7d56;--hair:#231a16;--beard:#231a16;--eye:#5b3828}
+.face-neck{position:absolute;width:42px;height:42px;left:64px;top:139px;background:var(--skin2);border:3px solid #33251e;border-radius:9px;z-index:1}
+.face-shoulders{position:absolute;left:22px;right:22px;height:76px;bottom:0;border-radius:55px 55px 18px 18px;background:linear-gradient(90deg,var(--jersey2),var(--jersey),var(--jersey2));border:4px solid #152a43;z-index:2}
+.face-head{position:absolute;width:105px;height:125px;left:33px;top:24px;background:linear-gradient(100deg,var(--skin),var(--skin2));border:4px solid #33251e;border-radius:46% 46% 42% 42%;z-index:4}
+.face-ear{position:absolute;width:18px;height:30px;top:72px;background:var(--skin2);border:4px solid #33251e;z-index:3}.face-ear.left{left:22px;border-radius:15px 2px 2px 15px}.face-ear.right{right:22px;border-radius:2px 15px 15px 2px}
+.face-eye{position:absolute;top:69px;width:19px;height:11px;background:#f7f7f2;border:3px solid #35251e;border-radius:50%;z-index:7}.face-eye:after{content:"";position:absolute;width:7px;height:7px;background:var(--eye);border:2px solid #1b1512;border-radius:50%;left:3px;top:0}.face-eye.left{left:55px}.face-eye.right{right:55px}
+.face-brow{position:absolute;top:58px;width:26px;height:5px;background:var(--hair);border-radius:7px;z-index:8}.face-brow.left{left:50px;transform:rotate(-4deg)}.face-brow.right{right:50px;transform:rotate(4deg)}
+.face-nose{position:absolute;left:81px;top:83px;width:10px;height:25px;border-left:3px solid #8f5f44;border-bottom:3px solid #8f5f44;border-radius:0 0 0 8px;z-index:8}
+.face-mouth{position:absolute;left:69px;top:116px;width:32px;height:8px;border-bottom:4px solid #7d443a;border-radius:50%;z-index:9}
+.face-hair{position:absolute;left:35px;top:14px;width:100px;height:40px;background:var(--hair);border:4px solid #251a15;border-radius:48px 48px 18px 18px;z-index:10;transform-origin:center bottom}
+.face-beard{display:none;position:absolute;left:51px;top:103px;width:69px;height:49px;background:var(--beard);border:3px solid #33251e;border-top:0;border-radius:8px 8px 32px 32px;z-index:6;clip-path:polygon(0 0,23% 9%,50% 0,77% 9%,100% 0,92% 75%,73% 100%,27% 100%,8% 75%)}
+.face-preview.beard-stubble .face-beard{display:block;height:26px;top:118px;opacity:.52;clip-path:polygon(0 0,100% 0,88% 100%,12% 100%)}
+.face-preview.beard-short .face-beard{display:block;height:39px;top:110px}
+.face-preview.beard-full .face-beard{display:block;height:51px;top:103px}
+.face-preview.hair-buzz .face-hair{height:18px;top:22px;border-radius:38px 38px 10px 10px}
+.face-preview.hair-short .face-hair{height:34px;top:15px;clip-path:polygon(0 32%,12% 12%,29% 24%,45% 3%,63% 22%,82% 8%,100% 30%,100% 100%,0 100%)}
+.face-preview.hair-curly .face-hair{height:38px;top:11px;border-radius:50% 50% 24% 24%;box-shadow:-14px 8px 0 -6px var(--hair),14px 8px 0 -6px var(--hair),-4px -7px 0 -4px var(--hair),8px -6px 0 -5px var(--hair)}
+.face-preview.hair-fade .face-hair{height:31px;top:17px;left:42px;width:86px;clip-path:polygon(7% 38%,25% 16%,80% 2%,100% 29%,93% 100%,0 100%)}
+.face-preview.hair-long .face-hair{height:38px;top:15px;border-radius:45px 45px 12px 12px}
+.face-preview.hair-long .face-hair:before,.face-preview.hair-long .face-hair:after{content:"";position:absolute;top:24px;width:14px;height:70px;background:var(--hair);border:3px solid #251a15;z-index:-1}.face-preview.hair-long .face-hair:before{left:-5px;border-radius:10px 2px 10px 14px}.face-preview.hair-long .face-hair:after{right:-5px;border-radius:2px 10px 14px 10px}
+.face-preview.hair-mohawk .face-hair{width:39px;left:66px;height:48px;top:0;border-radius:12px 12px 6px 6px;clip-path:polygon(25% 100%,0 28%,35% 18%,48% 0,62% 19%,100% 29%,77% 100%)}
+
 
 /* HOME VISUAL HUB */
 .hub{position:relative;min-height:calc(100vh - 88px);overflow:hidden;background:linear-gradient(#8fd0ea 0 18%,#d9f0f1 18% 23%,#5aa763 23% 65%,#3d7f49 65%);border-bottom:1px solid #1d2c3d}
@@ -102,7 +125,7 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
 .tabs{position:fixed;z-index:60;bottom:0;left:50%;transform:translateX(-50%);width:min(560px,100%);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 8px calc(7px + env(safe-area-inset-bottom));background:#09111bf2;border-top:1px solid #26394f;backdrop-filter:blur(14px)}
 .tab{border:0;background:transparent;color:#8295ac;padding:8px 2px;border-radius:11px;font-size:10px;font-weight:900}.tab b{display:block;font-size:18px;line-height:18px;margin-bottom:2px}.tab.active{background:#19283b;color:#fff}.tab.locked{opacity:.45}
 
-/* Prototype 0.4 visual polish */
+/* Prototype 0.4.1 visual polish */
 .training-complex{position:absolute;left:0;right:0;top:108px;height:120px;z-index:2;pointer-events:none}
 .facility{position:absolute;bottom:0;border:3px solid #263746;border-bottom:0;background:linear-gradient(#d7e0e3,#aab7bd);box-shadow:0 6px 0 #0002}
 .facility span{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;font-size:9px;font-weight:950;color:#2d3d48;letter-spacing:.08em}
@@ -124,15 +147,16 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
 /* richer player */
 .footballer{width:128px;height:176px}
 .player-head{position:absolute;width:40px;height:42px;left:44px;top:3px;border-radius:48% 48% 45% 45%;background:linear-gradient(var(--skin),var(--skin2));border:3px solid #2b2019;z-index:6}
-.player-hair{position:absolute;left:-3px;right:-3px;top:-3px;height:17px;background:var(--hair);border-radius:19px 19px 5px 5px;border:3px solid #17110e;border-bottom:0;z-index:8}
-.hair-buzz .player-hair{height:9px;border-radius:16px 16px 3px 3px}
-.hair-short .player-hair{height:18px;clip-path:polygon(0 22%,18% 0,36% 18%,54% 0,72% 18%,88% 2%,100% 30%,100% 100%,0 100%)}
-.hair-curly .player-hair{height:23px;top:-8px;border-radius:50% 50% 28% 28%;box-shadow:-8px 5px 0 -2px var(--hair),8px 5px 0 -2px var(--hair),0 -5px 0 -1px var(--hair)}
-.hair-fade .player-hair{height:20px;left:3px;right:3px;border-radius:14px 14px 5px 5px;clip-path:polygon(12% 24%,88% 0,100% 100%,0 100%)}
-.hair-long .player-hair{height:31px;left:-5px;right:-5px;border-radius:18px 18px 10px 10px}
-.hair-mohawk .player-hair{height:25px;left:10px;right:10px;top:-12px;border-radius:8px 8px 4px 4px}
+.player-hair{position:absolute;left:-3px;right:-3px;top:-3px;height:15px;background:var(--hair);border-radius:19px 19px 5px 5px;border:3px solid #17110e;border-bottom:0;z-index:8;pointer-events:none}
+.hair-buzz .player-hair{height:7px;top:0;border-radius:15px 15px 3px 3px}
+.hair-short .player-hair{height:14px;top:-2px;clip-path:polygon(0 35%,18% 5%,36% 20%,54% 2%,72% 20%,88% 5%,100% 35%,100% 100%,0 100%)}
+.hair-curly .player-hair{height:16px;top:-5px;border-radius:50% 50% 25% 25%;box-shadow:-6px 3px 0 -2px var(--hair),6px 3px 0 -2px var(--hair),0 -5px 0 -2px var(--hair)}
+.hair-fade .player-hair{height:14px;left:3px;right:3px;top:-1px;border-radius:14px 14px 4px 4px;clip-path:polygon(12% 28%,88% 4%,100% 100%,0 100%)}
+.hair-long .player-hair{height:17px;left:-4px;right:-4px;top:-2px;border-radius:18px 18px 6px 6px}
+.hair-long .player-hair:before,.hair-long .player-hair:after{content:"";position:absolute;top:10px;width:6px;height:25px;background:var(--hair);border:2px solid #17110e}.hair-long .player-hair:before{left:-4px;border-radius:5px}.hair-long .player-hair:after{right:-4px;border-radius:5px}
+.hair-mohawk .player-hair{height:20px;left:11px;right:11px;top:-10px;border-radius:7px 7px 3px 3px;clip-path:polygon(20% 100%,0 30%,35% 18%,50% 0,66% 20%,100% 30%,80% 100%)}
 .eye-dot{position:absolute;top:20px;width:5px;height:5px;background:var(--eye);border:1px solid #241a16;border-radius:50%;z-index:9}.eye-dot.left{left:9px}.eye-dot.right{right:9px}
-.beard{display:none;position:absolute;left:7px;right:7px;bottom:-2px;height:14px;background:var(--hair);border-radius:4px 4px 15px 15px;opacity:.88;z-index:7}.beard-stubble .beard{display:block;height:7px;bottom:0;opacity:.55}.beard-short .beard{display:block;height:12px}.beard-full .beard{display:block;height:17px;left:4px;right:4px;bottom:-6px}
+.beard{display:none;position:absolute;left:7px;right:7px;bottom:-2px;height:14px;background:var(--beard);border-radius:4px 4px 15px 15px;opacity:.88;z-index:7}.beard-stubble .beard{display:block;height:7px;bottom:0;opacity:.55}.beard-short .beard{display:block;height:12px}.beard-full .beard{display:block;height:17px;left:4px;right:4px;bottom:-6px}
 .ear{position:absolute;width:7px;height:11px;background:var(--skin2);border:2px solid #2b2019;top:18px}.e1{left:-7px;border-radius:7px 0 0 7px}.e2{right:-7px;border-radius:0 7px 7px 0}
 .neck{position:absolute;width:16px;height:14px;background:var(--skin2);left:56px;top:39px;border-left:3px solid #2b2019;border-right:3px solid #2b2019;z-index:4}
 .jersey{position:absolute;width:54px;height:66px;left:37px;top:48px;border-radius:12px 12px 18px 18px;background:linear-gradient(90deg,var(--jersey2),var(--jersey) 48%,var(--jersey2));border:3px solid #10243b;z-index:5}
@@ -162,20 +186,19 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
 <div class="toast" id="toast"></div>
 
 <div class="modal" id="onboard"><div class="box">
-  <div class="tag">PROTOTYPE 0.4</div>
+  <div class="tag">PROTOTYPE 0.4.1</div>
   <h1>Crea il tuo calciatore</h1>
-  <p>Prototype 0.4: crea il tuo calciatore e personalizza il suo aspetto. Le scelte resteranno visibili nella Home e nel Locker Room.</p>
+  <p>Prototype 0.4.1: crea il tuo calciatore e personalizza il suo aspetto. Le scelte resteranno visibili nella Home e nel Locker Room.</p>
   <div class="field"><label>Nome calciatore</label><input id="nameInput" maxlength="18" value="Dyonic"></div>
   <div class="field"><label>Piede preferito</label><select id="footInput"><option>Destro</option><option>Sinistro</option></select></div>
-  <div class="custom-preview" id="onboardPreview">
-    <div class="footballer preview-player" aria-label="Anteprima calciatore">
-      <div class="shadow"></div>
-      <div class="player-head"><div class="player-hair"></div><div class="eye-dot left"></div><div class="eye-dot right"></div><div class="beard"></div><div class="ear e1"></div><div class="ear e2"></div></div>
-      <div class="neck"></div><div class="jersey"><span>9</span></div><div class="shorts"></div>
-      <div class="player-arm a1"></div><div class="player-arm a2"></div><div class="player-leg l1"></div><div class="player-leg l2"></div>
-      <div class="boot b1"></div><div class="boot b2"></div><div class="ball"></div>
-    </div>
-  </div>
+  <div class="custom-preview" id="onboardPreview"><div class="face-preview preview-player" aria-label="Anteprima volto">
+      <div class="face-shoulders"></div><div class="face-neck"></div>
+      <div class="face-ear left"></div><div class="face-ear right"></div>
+      <div class="face-head"></div><div class="face-hair"></div>
+      <div class="face-brow left"></div><div class="face-brow right"></div>
+      <div class="face-eye left"></div><div class="face-eye right"></div>
+      <div class="face-nose"></div><div class="face-mouth"></div><div class="face-beard"></div>
+    </div></div>
   <button class="btn alt" id="openCustomizerOnboard" style="width:100%;margin-bottom:8px">Personalizza aspetto</button>
   <button class="btn" id="create" style="width:100%">Inizia la carriera</button>
 </div></div>
@@ -184,20 +207,20 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
   <div class="tag">LOCKER ROOM · ASPETTO</div>
   <h1 style="margin-bottom:4px">Personalizza il giocatore</h1>
   <p>Modifiche cosmetiche: non cambiano le statistiche.</p>
-  <div class="custom-preview">
-    <div class="footballer preview-player" aria-label="Anteprima personalizzazione">
-      <div class="shadow"></div>
-      <div class="player-head"><div class="player-hair"></div><div class="eye-dot left"></div><div class="eye-dot right"></div><div class="beard"></div><div class="ear e1"></div><div class="ear e2"></div></div>
-      <div class="neck"></div><div class="jersey"><span>9</span></div><div class="shorts"></div>
-      <div class="player-arm a1"></div><div class="player-arm a2"></div><div class="player-leg l1"></div><div class="player-leg l2"></div>
-      <div class="boot b1"></div><div class="boot b2"></div><div class="ball"></div>
-    </div>
-  </div>
+  <div class="custom-preview"><div class="face-preview preview-player" aria-label="Anteprima volto">
+      <div class="face-shoulders"></div><div class="face-neck"></div>
+      <div class="face-ear left"></div><div class="face-ear right"></div>
+      <div class="face-head"></div><div class="face-hair"></div>
+      <div class="face-brow left"></div><div class="face-brow right"></div>
+      <div class="face-eye left"></div><div class="face-eye right"></div>
+      <div class="face-nose"></div><div class="face-mouth"></div><div class="face-beard"></div>
+    </div></div>
   <div class="custom-section"><label>Acconciatura</label><div class="style-row" id="hairStyles"></div></div>
   <div class="custom-grid">
     <div class="custom-section"><label>Tonalità pelle</label><div class="swatches" id="skinSwatches"></div></div>
     <div class="custom-section"><label>Colore capelli</label><div class="swatches" id="hairSwatches"></div></div>
     <div class="custom-section"><label>Colore occhi</label><div class="swatches" id="eyeSwatches"></div></div>
+    <div class="custom-section"><label>Colore barba</label><div class="swatches" id="beardSwatches"></div></div>
     <div class="custom-section"><label>Divisa allenamento</label><div class="swatches" id="jerseySwatches"></div></div>
   </div>
   <div class="custom-section"><label>Barba</label><div class="style-row" id="beardStyles"></div></div>
@@ -314,7 +337,7 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
     <div class="stat"><b>ATT</b><span>Ruolo</span></div>
   </div></div>
   <div class="card"><div class="title">Skill Tree ATT · prototipo</div><div class="skillgrid" id="skills"></div></div>
-  <div class="card"><button class="btn ghost" id="reset" style="width:100%">Azzera Prototype 0.4</button></div>
+  <div class="card"><button class="btn ghost" id="reset" style="width:100%">Azzera Prototype 0.4.1.1</button></div>
 </section>
 
 <section class="view" id="club">
@@ -323,7 +346,7 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
 </section>
 
 <section class="view" id="more">
-  <div class="header"><div class="brand">ALTRO</div><div class="tag">PROTOTYPE 0.4</div></div>
+  <div class="header"><div class="brand">ALTRO</div><div class="tag">PROTOTYPE 0.4.1</div></div>
   <div class="card">
     <div class="title">Locker Room</div>
     <div class="locker-avatar">
@@ -335,7 +358,7 @@ linear-gradient(180deg,#5fae67,#3f8c51)}
         <div class="boot b1"></div><div class="boot b2"></div><div class="ball"></div>
       </div>
     </div>
-    <p class="small-muted">Capelli, colore capelli, occhi, pelle, barba e divisa di allenamento sono modificabili. In questa build sono solo cosmetici.</p>
+    <p class="small-muted">Capelli, colore capelli, occhi, pelle, stile e colore barba e divisa di allenamento sono modificabili. In questa build sono solo cosmetici.</p>
     <button class="btn" id="openLockerCustomizer" style="width:100%">Modifica aspetto</button>
   </div>
   <div class="card"><div class="title">In sviluppo</div><p class="small-muted" style="margin:0">Scarpini, accessori, Sponsor, profilo, amici, notifiche e Chat Globale verranno aggiunti gradualmente.</p></div>
@@ -363,10 +386,10 @@ var SK={
  power:{n:"Potenza tiro",r:[["precision",5]]},
  dribble:{n:"Dribbling 1v1",r:[["control",5],["accel",3]]}
 };
-function defaultAppearance(){return {skin:"#d79a6d",skin2:"#bd7d56",hair:"#231a16",eyes:"#5b3828",jersey:"#1876e8",jersey2:"#0a4ca9",hairStyle:"short",beard:"none"}}
+function defaultAppearance(){return {skin:"#d79a6d",skin2:"#bd7d56",hair:"#231a16",beardColor:"#231a16",eyes:"#5b3828",jersey:"#1876e8",jersey2:"#0a4ca9",hairStyle:"short",beard:"none"}}
 function fresh(){var s={made:false,name:"Dyonic",foot:"Destro",ps:0,invested:0,energy:100,last:Date.now(),idle:null,focus:"precision",dur:30,appearance:defaultAppearance(),skills:{}};Object.keys(SK).forEach(function(k){s.skills[k]=0});return s}
 var S;try{S=JSON.parse(localStorage.getItem(KEY))||fresh()}catch(e){S=fresh()}
-Object.keys(SK).forEach(function(k){if(S.skills[k]==null)S.skills[k]=0});if(!S.appearance)S.appearance=defaultAppearance();
+Object.keys(SK).forEach(function(k){if(S.skills[k]==null)S.skills[k]=0});if(!S.appearance)S.appearance=defaultAppearance();if(!S.appearance.beardColor)S.appearance.beardColor=S.appearance.hair||"#231a16";
 var G=null;
 function save(){localStorage.setItem(KEY,JSON.stringify(S))}
 function toast(x){var t=document.getElementById("toast");t.textContent=x;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},1600)}
@@ -380,6 +403,7 @@ function req(k){var r=SK[k].r;if(!r)return "Base · subito disponibile";return r
 var AP={
  skin:[["#f2c6a5","#d9a47e"],["#e2ae82","#c88d64"],["#d79a6d","#bd7d56"],["#bd7c55","#9e6041"],["#945b3d","#71422d"],["#68402f","#4d2e23"]],
  hair:["#171311","#3a271c","#6a4027","#a96d32","#d5b16c","#8d342c"],
+ beardColors:["#171311","#3a271c","#6a4027","#a96d32","#d5b16c","#8d342c","#8b8b86"],
  eyes:["#4a2c20","#6b492d","#3e6645","#4b6d86","#78838b","#6a543a"],
  jersey:[["#1876e8","#0a4ca9"],["#e54343","#9f2525"],["#32a767","#1f7446"],["#7e5ce6","#4e31a8"],["#ef8d26","#b75b0c"],["#23262f","#0f1116"]],
  hairStyles:[["buzz","Rasati"],["short","Corti"],["curly","Ricci"],["fade","Fade"],["long","Lunghi"],["mohawk","Mohawk"]],
@@ -387,9 +411,9 @@ var AP={
 };
 var draft=null;
 function applyAppearance(a){
- document.querySelectorAll(".footballer").forEach(function(p){
+ document.querySelectorAll(".footballer,.face-preview").forEach(function(p){
    p.style.setProperty("--skin",a.skin);p.style.setProperty("--skin2",a.skin2);
-   p.style.setProperty("--hair",a.hair);p.style.setProperty("--eye",a.eyes);
+   p.style.setProperty("--hair",a.hair);p.style.setProperty("--beard",a.beardColor||a.hair);p.style.setProperty("--eye",a.eyes);
    p.style.setProperty("--jersey",a.jersey);p.style.setProperty("--jersey2",a.jersey2);
    p.classList.remove("hair-buzz","hair-short","hair-curly","hair-fade","hair-long","hair-mohawk","beard-stubble","beard-short","beard-full");
    p.classList.add("hair-"+a.hairStyle);
@@ -412,7 +436,7 @@ function renderCustomizer(){
    items.forEach(function(v){var b=document.createElement("button");b.className="style-choice"+(a[key]===v[0]?" on":"");b.textContent=v[1];b.onclick=function(){a[key]=v[0];renderCustomizer();applyAppearance(a)};root.appendChild(b)})
  }
  styles("hairStyles",AP.hairStyles,"hairStyle");styles("beardStyles",AP.beards,"beard");
- swatches("skinSwatches",AP.skin,"skin",true);swatches("hairSwatches",AP.hair,"hair",false);swatches("eyeSwatches",AP.eyes,"eyes",false);swatches("jerseySwatches",AP.jersey,"jersey",true);
+ swatches("skinSwatches",AP.skin,"skin",true);swatches("hairSwatches",AP.hair,"hair",false);swatches("eyeSwatches",AP.eyes,"eyes",false);swatches("beardSwatches",AP.beardColors,"beardColor",false);swatches("jerseySwatches",AP.jersey,"jersey",true);
 }
 function openCustomizer(){draft=JSON.parse(JSON.stringify(S.appearance));document.getElementById("customizer").classList.add("show");renderCustomizer();applyAppearance(draft)}
 function closeCustomizer(saveIt){
